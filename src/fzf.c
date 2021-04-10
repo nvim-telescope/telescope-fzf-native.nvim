@@ -28,11 +28,15 @@ int32_t *pos_array(bool with_pos, int32_t len) {
 
 i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size) {
   if (slab != NULL && slab->I16.cap > *offset + size) {
-    i16_t *slice = slice_i16(&slab->I16, *offset, (*offset) + size);
+    i16_t *ret = malloc(sizeof(i16_t));
+    i16_slice_t slice = slice_i16(slab->I16.data, *offset, (*offset) + size);
+    ret->data = slice.data;
+    ret->size = slice.size;
+    ret->cap = slice.size;
     offset = offset + size;
-    return slice;
+    return ret;
   }
-  i16_t *ret = NULL;
+  i16_t *ret = malloc(sizeof(i16_t));
   ret->data = malloc(size * sizeof(int16_t));
   ret->size = size;
   ret->cap = size;
@@ -45,11 +49,15 @@ i16_t *alloc16_no(int32_t offset, slab_t *slab, int32_t size) {
 
 i32_t *alloc32(int32_t *offset, slab_t *slab, int32_t size) {
   if (slab != NULL && slab->I32.cap > *offset + size) {
-    i32_t *slice = slice_i32(&slab->I32, *offset, (*offset) + size);
+    i32_t *ret = malloc(sizeof(i32_t));
+    i32_slice_t slice = slice_i32(slab->I32.data, *offset, (*offset) + size);
+    ret->data = slice.data;
+    ret->size = slice.size;
+    ret->cap = slice.size;
     offset = offset + size;
-    return slice;
+    return ret;
   }
-  i32_t *ret = NULL;
+  i32_t *ret = malloc(sizeof(i32_t));
   ret->data = malloc(size * sizeof(int32_t));
   ret->size = size;
   ret->cap = size;
@@ -116,21 +124,20 @@ rune normalie_rune(rune r) {
 }
 
 int32_t try_skip(chars_t *input, bool case_sensitive, byte b, int32_t from) {
-  // byteArray := input.Bytes()[from:]
-  // basically a slice from till end
-  string_t *byte_array = slice_of_string_left(&input->slice, from);
-  int32_t idx = index_byte(byte_array, b);
+  str_slice_t slice = slice_str(input->slice.data, from, input->slice.size);
+  string_t byte_array = {.data = slice.data, .size = slice.size};
+  int32_t idx = index_byte(&byte_array, b);
   if (idx == 0) {
     return from;
   }
 
   if (!case_sensitive && b >= 'a' && b <= 'z') {
     if (idx > 0) {
-      string_t *tmp = slice_of_string_right(byte_array, idx);
-      free(byte_array);
-      byte_array = tmp;
+      str_slice_t tmp = slice_str_right(byte_array.data, idx);
+      byte_array.data = tmp.data;
+      byte_array.size = tmp.size;
     }
-    int32_t uidx = index_byte(byte_array, b - 32);
+    int32_t uidx = index_byte(&byte_array, b - 32);
     if (uidx >= 0) {
       idx = uidx;
     }
@@ -139,7 +146,6 @@ int32_t try_skip(chars_t *input, bool case_sensitive, byte b, int32_t from) {
     return -1;
   }
 
-  free(byte_array);
   return from + idx;
 }
 
@@ -181,62 +187,243 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 
 /* TODO(conni2461): maybe i add debugv2 maybe not */
 
-/* result_t *fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
- */
-/*                          chars_t *input, rune *pattern, bool with_pos, */
-/*                          slab_t *slab) { */
-/*   int32_t M = strlen(pattern); */
-/*   result_t ret; */
-/*   if (M == 0) { */
-/*     ret.start = 0; */
-/*     ret.end = 0; */
-/*     ret.score = 0; */
-/*     return ret; // TODO(conni2461): positions */
-/*   } */
-/*   int32_t N = input->slice.size; */
-/*   if (slab != NULL && N * M > slab->I16.cap) { */
-/*     return fuzzy_match_v2(case_sensitive, normalize, forward, input, pattern,
- */
-/*                           with_pos, slab); */
-/*   } */
+result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
+                        chars_t *input, rune *pattern, bool with_pos,
+                        slab_t *slab) {
+  const int32_t M = rune_len(pattern);
+  if (M == 0) {
+    return (result_t){0, 0, 0};
+  }
+  const int32_t N = input->slice.size;
+  if (slab != NULL && N * M > slab->I16.cap) {
+    return fuzzy_match_v1(case_sensitive, normalize, forward, input, pattern,
+                          with_pos, slab);
+  }
 
-/*   int32_t idx = ascii_fuzzy_index(input, pattern, M, case_sensitive); */
-/*   if (idx < 0) { */
-/*     return init_result(0, 0, 0); */
-/*   } */
+  int32_t idx = ascii_fuzzy_index(input, pattern, M, case_sensitive);
+  if (idx < 0) {
+    return (result_t){-1, -1, 0};
+  }
 
-/*   int16_t offset16 = 0; */
-/*   int32_t offset32 = 0; */
-/*   int16_t *H0; // alloc16(offset16, slab, N) */
-/*   int16_t *C0; // alloc16(offset16, slab, N) */
-/*   // Bonus point for each positions */
-/*   int16_t *B; // alloc16(offset16, slab, N) */
-/*   // The first occurrence of each character in the pattern */
-/*   int32_t *F; // alloc32(offset32, slab, M) */
-/*   // Rune array */
-/*   int32_t *T; // alloc32(offset32, slab, N) */
-/*   /1* input.CopyRunes(T) *1/ */
+  int32_t offset16 = 0;
+  int32_t offset32 = 0;
+  i16_t *H0 = alloc16(&offset16, slab, N);
+  i16_t *C0 = alloc16(&offset16, slab, N);
+  // Bonus point for each positions
+  i16_t *B = alloc16(&offset16, slab, N);
+  // The first occurrence of each character in the pattern
+  i32_t *F = alloc32(&offset32, slab, M);
+  // Rune array
+  i32_t *T = alloc32_no(offset32, slab, N);
+  copy_runes(input, T); // input.CopyRunes(T)
 
-/*   // Phase 2. Calculate bonus for each point */
-/*   int16_t max_score = 0; */
-/*   int32_t max_score_pos = 0; */
+  // Phase 2. Calculate bonus for each point
+  int16_t max_score = 0;
+  int32_t max_score_pos = 0;
 
-/*   int32_t pidx = 0; */
-/*   int32_t last_idx = 0; */
+  int32_t pidx = 0;
+  int32_t last_idx = 0;
 
-/*   rune pchar0 = pattern[0]; */
-/*   rune pchar = pattern[0]; */
-/*   int16_t prevH0 = 0; */
-/*   int32_t prev_class = char_non_word; */
-/*   bool in_gap = false; */
+  rune pchar0 = pattern[0];
+  rune pchar = pattern[0];
+  int16_t prevH0 = 0;
+  int32_t prev_class = char_non_word;
+  bool in_gap = false;
 
-/*   /1* int32_t Tsub = T[idx:] *1/ */
-/*   /1* H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], */
-/*    * B[idx:][:len(Tsub)] *1/ */
-/*   /1* TODO(conni2461): 381 *1/ */
+  i32_slice_t Tsub = slice_i32(T->data, idx, T->size); // T[idx:];
+  i16_slice_t H0sub =
+      slice_i16_right(slice_i16(H0->data, idx, H0->size).data, Tsub.size);
+  i16_slice_t C0sub =
+      slice_i16_right(slice_i16(C0->data, idx, C0->size).data, Tsub.size);
+  i16_slice_t Bsub =
+      slice_i16_right(slice_i16(B->data, idx, B->size).data, Tsub.size);
 
-/*   return ret; */
-/* } */
+  for (int32_t off = 0; off < Tsub.size; off++) {
+    charClass class;
+    char c = Tsub.data[off];
+    if (c <= UNICODE_MAXASCII) {
+      class = char_class_of_ascii(c);
+      if (!case_sensitive && class == char_upper) {
+        c += 32;
+      }
+    } else {
+      class = char_class_of_non_ascii(c);
+      if (!case_sensitive && class == char_upper) {
+        /* TODO(conni2461): unicode support */
+        c = tolower(c);
+      }
+      if (normalize) {
+        c = normalie_rune(c);
+      }
+    }
+
+    Tsub.data[off] = c;
+    int16_t bonus = bonus_for(prev_class, class);
+    Bsub.data[off] = bonus;
+    prev_class = class;
+    if (c == pchar) {
+      if (pidx < M) {
+        F->data[pidx] = (int32_t)(idx + off);
+        pidx++;
+        pchar = pattern[min32(pidx, M - 1)];
+      }
+      last_idx = idx + off;
+    }
+
+    if (c == pchar0) {
+      int32_t score = score_match + bonus * bonus_first_char_multiplier;
+      H0sub.data[off] = score;
+      C0sub.data[off] = 1;
+      if (M == 1 && ((forward && score > max_score) ||
+                     (!forward && score >= max_score))) {
+        max_score = score;
+        max_score_pos = idx + off;
+        if (forward && bonus == bonus_boundary) {
+          break;
+        }
+      }
+      in_gap = false;
+    } else {
+      if (in_gap) {
+        H0sub.data[off] = max16(prevH0 + score_gap_extention, 0);
+      } else {
+        H0sub.data[off] = max16(prevH0 + score_gap_start, 0);
+      }
+      C0sub.data[off] = 0;
+      in_gap = false;
+    }
+    prevH0 = H0sub.data[off];
+  }
+  if (pidx != M) {
+    return (result_t){-1, -1, 0};
+  }
+  if (M == 1) {
+    result_t res = {max_score_pos, max_score_pos + 1, max_score};
+    return res;
+    /* TODO(conni2461): positions see 441 */
+    /* if (!with_pos) { */
+    /* } */
+  }
+
+  int32_t f0 = F->data[0];
+  int32_t width = last_idx - f0 + 1;
+  i16_t *H = alloc16(&offset16, slab, width * M);
+  {
+    i16_slice_t H0_tmp_slice = slice_i16(H0->data, f0, last_idx + 1);
+    copy_into_i16(H, &H0_tmp_slice);
+  }
+
+  i16_t *C = alloc16_no(offset16, slab, width * M);
+  {
+    i16_slice_t C0_tmp_slice = slice_i16(C0->data, f0, last_idx + 1);
+    copy_into_i16(C, &C0_tmp_slice);
+  }
+
+  i32_slice_t Fsub = slice_i32(F->data, 1, F->size);
+  str_slice_t Psub = slice_str_right(slice_str(pattern, 1, M).data, Fsub.size);
+  for (int32_t off = 0; off < Fsub.size; off++) {
+    int32_t f = Fsub.data[off];
+    pchar = Psub.data[off];
+    pidx = off + 1;
+    int32_t row = pidx * width;
+    in_gap = false;
+    Tsub = slice_i32(T->data, f, last_idx + 1);
+    Bsub = slice_i16_right(slice_i16(B->data, f, B->size).data, Tsub.size);
+    i16_slice_t Csub = slice_i16_right(
+        slice_i16(C->data, row + f - f0, C->size).data, Tsub.size);
+    i16_slice_t Cdiag = slice_i16_right(
+        slice_i16(C->data, row + f - f0 - 1 - width, C->size).data, Tsub.size);
+    i16_slice_t Hsub = slice_i16_right(
+        slice_i16(H->data, row + f - f0, H->size).data, Tsub.size);
+    i16_slice_t Hdiag = slice_i16_right(
+        slice_i16(H->data, row + f - f0 - 1 - width, H->size).data, Tsub.size);
+    i16_slice_t Hleft = slice_i16_right(
+        slice_i16(H->data, row + f - f0 - 1, H->size).data, Tsub.size);
+    Hleft.data[0] = 0;
+    for (int32_t j = 0; j < Tsub.size; j++) {
+      char c = Tsub.data[j];
+      int32_t col = j + f;
+      int16_t s1 = 0;
+      int16_t s2 = 0;
+      int16_t consecutive = 0;
+
+      if (in_gap) {
+        s2 = Hleft.data[j] + score_gap_extention;
+      } else {
+        s2 = Hleft.data[j] + score_gap_start;
+      }
+
+      if (pchar == c) {
+        s1 = Hdiag.data[j] + score_match;
+        int16_t b = Bsub.data[j];
+        consecutive = Cdiag.data[j] + 1;
+        if (b == bonus_boundary) {
+          consecutive = 1;
+        } else if (consecutive > 1) {
+          b = max16(b, max16(bonus_consecutive,
+                             B->data[col - ((int32_t)consecutive) + 1]));
+        }
+        if (s1 + b < s2) {
+          s1 += Bsub.data[j];
+          consecutive = 0;
+        } else {
+          s1 += b;
+        }
+      }
+      Csub.data[j] = consecutive;
+      in_gap = s1 < s2;
+      int16_t score = max16(max16(s1, s2), 0);
+      if (pidx == M - 1 && ((forward && score > max_score) ||
+                            (!forward && score >= max_score))) {
+        max_score = score;
+        max_score_pos = col;
+      }
+      Hsub.data[j] = score;
+    }
+  }
+
+  // TODO(conni2461): DEBUG
+  /* if DEBUG { */
+  /*   debugV2(T, pattern, F, lastIdx, H, C) */
+  /* } */
+
+  // TODO(conni2461): Position
+  /* int32_t *pos = pos_array(with_pos, M); */
+  int32_t j = f0;
+  /* if (with_pos) { */
+  /*   int32_t i = M - 1; */
+  /*   int32_t j = max_score_pos; */
+  /*   bool prefer_match = true; */
+  /*   for (;;) { */
+  /*     int32_t I = i * width; */
+  /*     int32_t j0 = j - f0; */
+  /*     int16_t s = H->data[I + j0]; */
+
+  /*     int16_t s1 = 0; */
+  /*     int16_t s2 = 0; */
+  /*     if (i > 0 && j >= F->data[i]) { */
+  /*       s1 = H->data[I - width + j0 - 1]; */
+  /*     } */
+  /*     if (j > F->data[i]) { */
+  /*       s2 = H->data[I + j0 - 1]; */
+  /*     } */
+
+  /*     if (s > s1 && (s > s2 || (s == s2 && prefer_match))) { */
+  /*       pos = append(pos, j); */
+  /*       if (i == 0) { */
+  /*         break; */
+  /*       } */
+  /*       i--; */
+  /*     } */
+  /*     prefer_match = C->data[I + j0] > 1 || */
+  /*                     (I + width + j0 + 1 < C->size && */
+  /*                      C->data[I + width + j0 + 1] > 0); */
+  /*     j--; */
+  /*   } */
+  /* } */
+
+  return (result_t){j, max_score_pos + 1, (int32_t)max_score};
+}
 
 // LETS GO BACKWARDS
 int32_t calculate_score(bool case_sensitive, bool normalize, chars_t *text,
@@ -276,7 +463,7 @@ int32_t calculate_score(bool case_sensitive, bool normalize, chars_t *text,
         if (bonus == bonus_boundary) {
           first_bonus = bonus;
         }
-        bonus = fmax(fmax(bonus, first_bonus), bonus_consecutive);
+        bonus = max16(max16(bonus, first_bonus), bonus_consecutive);
       }
       if (pidx == 0) {
         score += (int32_t)(bonus * bonus_first_char_multiplier);
@@ -584,7 +771,7 @@ int32_t get_match(bool case_sensitive, bool normalize, char *text,
   asdf.slice.data = text;
   asdf.slice.size = strlen(text);
 
-  return fuzzy_match_v1(case_sensitive, normalize, false, &asdf, pattern, false,
+  return fuzzy_match_v2(case_sensitive, normalize, true, &asdf, pattern, false,
                         NULL)
       .score;
 }

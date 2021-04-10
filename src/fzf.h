@@ -72,7 +72,6 @@ charClass char_class_of_non_ascii(rune ch); // TODO(conni2461)
 
 int16_t bonus_for(charClass prev_class, charClass class);
 int16_t bonus_at(chars_t *input, int32_t idx);
-/* TODO(conni2461): replace fmax with max16 */
 
 rune normalie_rune(rune r); // TODO(conni2461)
 
@@ -83,7 +82,7 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                         chars_t *text, rune *pattern, bool with_pos,
-                        slab_t *slab); //TODO
+                        slab_t *slab);
 int32_t calculate_score(bool case_sensitive, bool normalize, chars_t *text,
                         rune *pattern, int32_t sidx, int32_t eidx,
                         bool with_pos);

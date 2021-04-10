@@ -1,0 +1,33 @@
+name: Linting and style checking
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install luarocks
+          sudo luarocks install luacheck
+
+      - name: Lint
+        run: make lint
+
+  format:
+    name: Format
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang-format
+
+      - name: Format
+        run: make format

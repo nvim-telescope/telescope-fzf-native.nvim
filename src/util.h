@@ -30,20 +30,20 @@ typedef struct {
   int32_t index;
 } chars_t;
 
-// Helpers for i16_t
-i16_t *slice_i16(i16_t *input, int32_t from, int32_t to);
-i16_t *slice_i16_left(i16_t *input, int32_t from);
-i16_t *slice_i16_right(i16_t *input, int32_t to);
-
-// helpers for i32_t
-i32_t *slice_i32(i32_t *input, int32_t from, int32_t to);
-i32_t *slice_i32_left(i32_t *input, int32_t from);
-i32_t *slice_i32_right(i32_t *input, int32_t to);
-
-// helpers for string_t
-string_t *slice_of_string(string_t *input, int32_t from, int32_t to);
-string_t *slice_of_string_left(string_t *input, int32_t from);
-string_t *slice_of_string_right(string_t *input, int32_t to);
+// Helpers for slice
+#define slice_def(name, type)                                                  \
+  typedef struct {                                                             \
+    type *data;                                                                \
+    int32_t from;                                                              \
+    int32_t to;                                                                \
+    int32_t size;                                                              \
+  } name##_slice_t;                                                            \
+                                                                               \
+  name##_slice_t slice_##name(type *input, int32_t from, int32_t to);          \
+  name##_slice_t slice_##name##_right(type *input, int32_t to);
+slice_def(i16, int16_t);
+slice_def(i32, int32_t);
+slice_def(str, char);
 int32_t index_byte(string_t *string, char b);
 
 // chars_t helpers
@@ -51,3 +51,11 @@ int32_t rune_len(rune *arr);
 bool is_space(char ch);
 int32_t leading_whitespaces(chars_t *chars);
 int32_t trailing_whitespaces(chars_t *chars);
+void copy_runes(chars_t *chars, i32_t *destination);
+void copy_into_i16(i16_t *dest, i16_slice_t *src);
+
+// min + max
+int16_t min16(int16_t a, int16_t b);
+int16_t max16(int16_t a, int16_t b);
+int32_t min32(int32_t a, int32_t b);
+int32_t max32(int32_t a, int32_t b);
