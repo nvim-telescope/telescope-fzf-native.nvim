@@ -1,11 +1,15 @@
 all: libfzf.so
 
-build/fzf.o: src/fzf.c
+build/fzf.o: src/fzf.c src/fzf.h
 	mkdir -pv build
 	gcc -c -Wall -Werror -fpic src/fzf.c -o build/fzf.o
 
-libfzf.so: build/fzf.o
-	gcc -shared -o build/libfzf.so build/fzf.o
+build/util.o: src/util.c src/util.h
+	mkdir -pv build
+	gcc -c -Wall -Werror -fpic src/util.c -o build/util.o
+
+libfzf.so: build/fzf.o build/util.o
+	gcc -shared -o build/libfzf.so build/fzf.o build/util.o
 
 .PHONY: test lint format db clean
 test:
