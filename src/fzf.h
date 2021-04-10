@@ -72,6 +72,7 @@ charClass char_class_of_non_ascii(rune ch); // TODO(conni2461)
 
 int16_t bonus_for(charClass prev_class, charClass class);
 int16_t bonus_at(chars_t *input, int32_t idx);
+/* TODO(conni2461): replace fmax with max16 */
 
 rune normalie_rune(rune r); // TODO(conni2461)
 
@@ -80,19 +81,27 @@ bool is_ascii(rune *runes, int32_t size);
 int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
                           bool case_sensitive);
 
-result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                         chars_t *input, rune *pattern, bool with_pos,
-                         slab_t *slab);
-
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                         chars_t *input, rune *pattern, bool with_pos,
-                         slab_t *slab);
-
-// BACKWARDS
+                        chars_t *text, rune *pattern, bool with_pos,
+                        slab_t *slab); //TODO
+int32_t calculate_score(bool case_sensitive, bool normalize, chars_t *text,
+                        rune *pattern, int32_t sidx, int32_t eidx,
+                        bool with_pos);
+result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
+                        chars_t *text, rune *pattern, bool with_pos,
+                        slab_t *slab);
+result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
+                           chars_t *text, rune *pattern, bool with_pos,
+                           slab_t *slab);
+result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
+                      chars_t *text, rune *pattern, bool with_pos,
+                      slab_t *slab);
+result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
+                      chars_t *text, rune *pattern, bool with_pos,
+                      slab_t *slab);
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
-                      chars_t *text, rune *pattern, bool withPos, slab_t *slab);
+                     chars_t *text, rune *pattern, bool with_pos, slab_t *slab);
 
 // HELPERS
-result_t init_result(int32_t start, int32_t end, int32_t score);
-int32_t calculate_score(bool case_sensitive, bool normalize, char *text,
-                        char *pattern);
+int32_t get_match(bool case_sensitive, bool normalize, char *text,
+                  char *pattern);

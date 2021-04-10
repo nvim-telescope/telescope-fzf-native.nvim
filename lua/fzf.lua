@@ -6,14 +6,15 @@ local library_path = dirname .. '../build/libfzf.so'
 local native = ffi.load(library_path)
 
 ffi.cdef[[
-int32_t calculate_score(bool case_sensitive, bool normalize, char *text,
-                        char *pattern);
+int32_t get_match(bool case_sensitive, bool normalize, char *text,
+                  char *pattern);
 ]]
 
-local str = 'hello'
-local text = ffi.new("char[?]", #str + 1)
-local pattern = ffi.new("char[?]", #str + 1)
-ffi.copy(text, str)
-ffi.copy(pattern, str)
+local str1 = 'hello, world!'
+local str2 = 'hello world'
+local text = ffi.new("char[?]", #str1 + 1)
+local pattern = ffi.new("char[?]", #str2 + 1)
+ffi.copy(text, str1)
+ffi.copy(pattern, str2)
 
-print(native.calculate_score(false, false, text, pattern))
+print(native.get_match(false, false, text, pattern))
