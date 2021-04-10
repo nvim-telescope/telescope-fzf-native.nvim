@@ -50,8 +50,7 @@ typedef enum {
 } score_types;
 
 typedef int32_t charClass;
-typedef int32_t rune; // ADDITIONAL 32bit char
-typedef char byte;    // ADDITIONAL NEED TO FIGURE OUT THESE MISSING TYPES
+typedef char byte; // ADDITIONAL NEED TO FIGURE OUT THESE MISSING TYPES
 
 typedef enum {
   char_non_word = 0,
@@ -82,9 +81,18 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
                           bool case_sensitive);
 
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        chars_t *input, rune *pattern, bool with_pos,
-                        slab_t *slab);
+                         chars_t *input, rune *pattern, bool with_pos,
+                         slab_t *slab);
 
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        chars_t *input, rune *pattern, bool with_pos,
-                        slab_t *slab);
+                         chars_t *input, rune *pattern, bool with_pos,
+                         slab_t *slab);
+
+// BACKWARDS
+result_t equal_match(bool case_sensitive, bool normalize, bool forward,
+                      chars_t *text, rune *pattern, bool withPos, slab_t *slab);
+
+// HELPERS
+result_t init_result(int32_t start, int32_t end, int32_t score);
+int32_t calculate_score(bool case_sensitive, bool normalize, char *text,
+                        char *pattern);

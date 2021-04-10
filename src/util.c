@@ -71,3 +71,38 @@ int32_t index_byte(string_t *string, char b) {
   }
   return -1;
 }
+
+// char_t helpers
+int32_t rune_len(rune *arr) {
+  int32_t len = 0;
+  while (arr[len] != '\0') {
+    len++;
+  }
+  return len;
+}
+
+bool is_space(char ch) {
+  return ch == ' ' || ch == '\t' || ch == '\n';
+}
+
+int32_t leading_whitespaces(chars_t *chars) {
+  int32_t whitespaces = 0;
+  for (int32_t i = 0; i < chars->slice.size; i++) {
+    if (!is_space(chars->slice.data[i])) {
+      break;
+    }
+    whitespaces++;
+  }
+  return whitespaces;
+}
+
+int32_t trailing_whitespaces(chars_t *chars) {
+  int32_t whitespaces = 0;
+  for (int32_t i = chars->slice.size - 1; i >= 0; i--) {
+    if (!is_space(chars->slice.data[i])) {
+      break;
+    }
+    whitespaces++;
+  }
+  return whitespaces;
+}

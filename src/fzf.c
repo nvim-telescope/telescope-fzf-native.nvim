@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <ctype.h>
+
 // TODO(conni2461): UNICODE HEADER
 #define UNICODE_MAXASCII 0x7f
 
@@ -177,9 +179,10 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 
 /* TODO(conni2461): maybe i add debugv2 maybe not */
 
-/* result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward, */
-/*                         chars_t *input, rune *pattern, bool with_pos, */
-/*                         slab_t *slab) { */
+/* result_t *fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
+ */
+/*                          chars_t *input, rune *pattern, bool with_pos, */
+/*                          slab_t *slab) { */
 /*   int32_t M = strlen(pattern); */
 /*   result_t ret; */
 /*   if (M == 0) { */
@@ -190,16 +193,14 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 /*   } */
 /*   int32_t N = input->slice.size; */
 /*   if (slab != NULL && N * M > slab->I16.cap) { */
-/*     return fuzzy_match_v2(case_sensitive, normalize, forward, input, pattern, */
+/*     return fuzzy_match_v2(case_sensitive, normalize, forward, input, pattern,
+ */
 /*                           with_pos, slab); */
 /*   } */
 
 /*   int32_t idx = ascii_fuzzy_index(input, pattern, M, case_sensitive); */
 /*   if (idx < 0) { */
-/*     ret.start = 0; */
-/*     ret.end = 0; */
-/*     ret.score = 0; */
-/*     return ret; // TODO(conni2461): positions */
+/*     return init_result(0, 0, 0); */
 /*   } */
 
 /*   int16_t offset16 = 0; */
@@ -228,8 +229,91 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 /*   bool in_gap = false; */
 
 /*   /1* int32_t Tsub = T[idx:] *1/ */
-/*   /1* H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], B[idx:][:len(Tsub)] *1/ */
+/*   /1* H0sub, C0sub, Bsub := H0[idx:][:len(Tsub)], C0[idx:][:len(Tsub)], */
+/*    * B[idx:][:len(Tsub)] *1/ */
 /*   /1* TODO(conni2461): 381 *1/ */
 
 /*   return ret; */
 /* } */
+
+// LETS GO BACKWARDS
+result_t equal_match(bool case_sensitive, bool normalize, bool forward,
+                      chars_t *text, rune *pattern, bool withPos,
+                      slab_t *slab) {
+  int32_t len_pattern = rune_len(pattern);
+  if (len_pattern == 0) {
+    return init_result(-1, -1, 0);
+  }
+
+  int32_t trimmed_len = 0;
+  if (!is_space(pattern[0])) {
+    trimmed_len = leading_whitespaces(text);
+  }
+
+  int32_t trimmed_end_len = 0;
+  if (!is_space(pattern[len_pattern - 1])) {
+    trimmed_end_len = trailing_whitespaces(text);
+  }
+
+  if ((text->slice.size - trimmed_len - trimmed_end_len) != len_pattern) {
+    return init_result(-1, -1, 0);
+  }
+
+  bool match = true;
+  if (normalize) {
+    // TODO(conni2461): to rune
+    char *runes = text->slice.data;
+    for (int32_t idx = 0; idx < len_pattern; idx++) {
+      rune pchar = pattern[idx];
+      rune c = runes[trimmed_len + idx];
+      if (!case_sensitive) {
+        c = tolower(c);
+      }
+      if (normalie_rune(c) != normalie_rune(pchar)) {
+        match = false;
+        break;
+      }
+    }
+  } else {
+    // TODO(conni2461): to rune
+    char *runes = text->slice.data;
+
+    for (int32_t idx = 0; idx < len_pattern; idx++) {
+      rune pchar = pattern[idx];
+      rune c = runes[trimmed_len + idx];
+      if (!case_sensitive) {
+        c = tolower(c);
+      }
+      if (c != pchar) {
+        match = false;
+        break;
+      }
+    }
+  }
+  if (match) {
+    return init_result(trimmed_len, trimmed_len + len_pattern,
+                       (score_match + bonus_boundary) * len_pattern +
+                           (bonus_first_char_multiplier - 1) * bonus_boundary);
+  }
+  return init_result(-1, -1, 0);
+}
+
+// helpers
+result_t init_result(int32_t start, int32_t end, int32_t score) {
+  result_t ret = {.start = start, .end = end, .score = score};
+  return ret;
+}
+
+// TODO(conni2461): tmp for testing, we need unit tests
+int32_t calculate_score(bool case_sensitive, bool normalize, char *text,
+                        char *pattern) {
+  chars_t asdf = {.slice = {NULL},
+                  .in_bytes = false,
+                  .trim_length_known = false,
+                  .index = 0};
+  asdf.slice.data = text;
+  asdf.slice.size = strlen(text);
+
+  return equal_match(case_sensitive, normalize, false, &asdf, pattern,
+                              false, NULL).score;
+}
