@@ -3,10 +3,23 @@
 int32_t index_at(int32_t index, int32_t max, bool forward);
 
 typedef struct {
+  int32_t *data;
+  int32_t size;
+  int32_t cap;
+} position_t;
+
+typedef struct {
   int32_t start;
   int32_t end;
   int32_t score;
+
+  position_t *pos;
 } result_t;
+
+typedef struct {
+  int32_t score;
+  position_t *pos;
+} score_pos_tuple_t;
 
 typedef struct {
   i16_t I16;
@@ -60,7 +73,9 @@ typedef enum {
   char_number
 } char_types;
 
-int32_t *pos_array(bool with_pos, int32_t len);
+position_t *pos_array(bool with_pos, int32_t len);
+void append_pos(position_t *pos, int32_t value);
+
 i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size);
 i16_t *alloc16_no(int32_t offset, slab_t *slab, int32_t size);
 
@@ -83,9 +98,9 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                         chars_t *text, rune *pattern, bool with_pos,
                         slab_t *slab);
-int32_t calculate_score(bool case_sensitive, bool normalize, chars_t *text,
-                        rune *pattern, int32_t sidx, int32_t eidx,
-                        bool with_pos);
+score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
+                                  chars_t *text, rune *pattern, int32_t sidx,
+                                  int32_t eidx, bool with_pos);
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
                         chars_t *text, rune *pattern, bool with_pos,
                         slab_t *slab);
