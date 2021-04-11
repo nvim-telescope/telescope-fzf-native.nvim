@@ -1,3 +1,6 @@
+#ifndef _FZF_H_
+#define _FZF_H_
+
 #include "util.h"
 
 int32_t index_at(int32_t index, int32_t max, bool forward);
@@ -98,7 +101,46 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
   }                                                                            \
   free(obj);
 
+typedef enum {
+  term_fuzzy = 0,
+  term_exact,
+  term_prefix,
+  term_suffix,
+  term_equal
+} alg_types;
+
+typedef struct {
+  alg_types typ;
+  bool inv;
+  char *text;
+  bool case_sensitive;
+  bool normalize;
+} term_t;
+
+typedef struct {
+  term_t *ptr;
+  int32_t size;
+  int32_t cap;
+} term_set_t;
+
+typedef struct {
+  term_set_t *ptr;
+  int32_t size;
+  int32_t cap;
+} term_set_sets_t;
+
+void append_set(term_set_t *set, term_t value);
+void append_sets(term_set_sets_t *set, term_set_t *value);
+
+// TODO(conni2461): Return pattern. pattern has even more required information
+term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
+                                   char *pattern);
+term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
+                             char *pattern);
+
 int32_t get_match(bool case_sensitive, bool normalize, char *text,
                   char *pattern);
 
 slab_t *make_slab(int32_t size_16, int32_t size_32);
+
+#endif // _fzf_H_

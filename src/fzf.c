@@ -796,9 +796,167 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
   return (result_t){-1, -1, 0, NULL};
 }
 
-// TODO(conni2461): tmp for testing, we need unit tests
-// Or maybe that is the function that will combine everything above and return
-// the score. We need a function like that for telescope/lua
+void append_set(term_set_t *set, term_t value) {
+  if (set->cap == 0) {
+    set->cap = 1;
+    set->ptr = malloc(sizeof(term_set_t));
+  } else if (set->size + 1 > set->cap) {
+    // I want to keep this set as thight as possible. This function should not
+    // be called that often because it only happens inside the prompt
+    // determination, which happens only once for each prompt.
+    set->cap += 1;
+    set->ptr = realloc(set->ptr, sizeof(term_t) * set->cap);
+    assert(set->ptr != NULL);
+    printf("resizing\n");
+  }
+  set->ptr[set->size] = value;
+  set->size += 1;
+}
+
+void append_sets(term_set_sets_t *set, term_set_t *value) {
+  if (set->cap == 0) {
+    set->cap = 1;
+    set->ptr = malloc(sizeof(term_set_t));
+  } else if (set->size + 1 > set->cap) {
+    // Same reason as append_set. Need to think about this more
+    set->cap += 1;
+    set->ptr = realloc(set->ptr, sizeof(term_set_t) * set->cap);
+    assert(set->ptr != NULL);
+  }
+  set->ptr[set->size] = *value;
+  set->size += 1;
+}
+
+// TODO determine forward
+/* forward := true */
+/* for _, cri := range opts.Criteria[1:] { */
+/*   if cri == byEnd { */
+/*     forward = false */
+/*     break */
+/*   } */
+/*   if cri == byBegin { */
+/*     break */
+/*   } */
+/* } */
+
+/* assumption (maybe i change that later)
+ * - bool fuzzy always true
+ * - always v2 alg
+ * - bool extended always true (thats the whole point of this isn't it)
+ *
+ * TODOs:
+ * - case (smart, ignore, respect) currently only ignore or respect
+ */
+term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
+                                   char *pattern) {
+  int32_t len = strlen(pattern);
+  char *as_string;
+  as_string = trim_left(pattern, len, ' ', &len);
+  while (has_suffix(as_string, len, " ", 1) &&
+         !has_suffix(as_string, len, "\\ ", 2)) {
+    as_string[len - 1] = 0;
+    len--;
+  }
+  return parse_terms(case_sensitive, normalize, as_string);
+}
+
+term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
+                             char *pattern) {
+  pattern = str_replace(pattern, "\\ ", "\t");
+  const char *delim = " ";
+  char *ptr = strtok(pattern, delim);
+
+  term_set_sets_t *sets = malloc(sizeof(term_set_sets_t));
+  sets->size = 0;
+  sets->cap = 0;
+  term_set_t *set = malloc(sizeof(term_set_t));
+  set->size = 0;
+  set->cap = 0;
+
+  bool switch_set = false;
+  bool after_bar = false;
+  while (ptr != NULL) {
+    alg_types typ = term_fuzzy;
+    bool inv = false;
+    ptr = str_replace(ptr, "\t", " ");
+
+    int32_t len = strlen(ptr);
+    char *text = malloc(len * sizeof(char) + 1);
+    strcpy(text, ptr);
+    /* char *lower_text = str_tolower(text); */
+    /* caseSensitive = caseMode == CaseRespect || */
+    /*                   caseMode == CaseSmart &&text != lowerText; */
+    /* normalizeTerm := normalize && */
+    /*   lowerText == string(algo.NormalizeRunes([]rune(lowerText))); */
+    if (!case_sensitive) {
+      str_tolower(text);
+    }
+    if (set->size > 0 && !after_bar && strcmp(text, "|") == 0) {
+      switch_set = false;
+      after_bar = true;
+      continue;
+    }
+    after_bar = false;
+    if (has_prefix(text, "!", 1)) {
+      inv = true;
+      typ = term_exact;
+      text++;
+      len--;
+    }
+
+    if (strcmp(text, "$") != 0 && has_suffix(text, len, "$", 1)) {
+      typ = term_suffix;
+      text[len - 1] = 0;
+      len--;
+    }
+
+    if (has_prefix(text, "'", 1)) {
+      if (!inv) { // usually if fuzzy && but we assume always fuzzy
+        typ = term_exact;
+        text++;
+        len--;
+      } else {
+        typ = term_fuzzy;
+        text++;
+        len--;
+      }
+    } else if (has_prefix(text, "^", 1)) {
+      if (typ == term_suffix) {
+        typ = term_equal;
+      } else {
+        typ = term_prefix;
+      }
+      text++;
+      len--;
+    }
+
+    if (len > 0) {
+      if (switch_set) {
+        append_sets(sets, set);
+        set = malloc(sizeof(term_set_t));
+        set->cap = 0;
+        set->size = 0;
+      }
+      /* if normalizeTerm { */
+      /*   textRunes = algo.NormalizeRunes(textRunes) */
+      /* } */
+      // TODO(conni2461):
+      append_set(set, (term_t){.typ = typ,
+                               .inv = inv,
+                               .text = text, // DO I NEED TO COPY HERE?!
+                               .case_sensitive = case_sensitive, // not correct
+                               .normalize = normalize});         // not correct
+      switch_set = true;
+    }
+
+    ptr = strtok(NULL, delim);
+  }
+  if (set->size > 0) {
+    append_sets(sets, set);
+  }
+  return sets;
+}
+
 int32_t get_match(bool case_sensitive, bool normalize, char *text,
                   char *pattern) {
   chars_t asdf = {.slice = {NULL},

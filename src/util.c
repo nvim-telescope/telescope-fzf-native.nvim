@@ -1,9 +1,11 @@
 #include "util.h"
 
+#include <ctype.h>
+#include <string.h>
+
 #define slice_impl(name, type)                                                 \
   name##_slice_t slice_##name(type *input, int32_t from, int32_t to) {         \
-    return (name##_slice_t){                                                   \
-        .data = input + from, .from = from, .to = to, .size = to - from};      \
+    return (name##_slice_t){.data = input + from, .size = to - from};          \
   }                                                                            \
   name##_slice_t slice_##name##_right(type *input, int32_t to) {               \
     return slice_##name(input, 0, to);                                         \
@@ -66,6 +68,78 @@ void copy_runes(chars_t *chars, i32_t *destination) {
 void copy_into_i16(i16_t *dest, i16_slice_t *src) {
   for (int i = 0; i < src->size; i++) {
     dest->data[i] = src->data[i];
+  }
+}
+
+// char* helpers
+char *trim_left(char *str, int32_t len, char trim, int32_t *new_len) {
+  *new_len = len;
+  for (int32_t i = 0; i < len; i++) {
+    if (str[0] == trim) {
+      (*new_len)--;
+      str++;
+    } else {
+      break;
+    }
+  }
+  return str;
+}
+
+bool has_prefix(char *str, char *prefix, int32_t prefix_len) {
+  return strncmp(prefix, str, prefix_len) == 0;
+}
+
+bool has_suffix(char *str, int32_t len, char *suffix, int32_t suffix_len) {
+  return len >= suffix_len &&
+         strcmp(slice_str(str, len - suffix_len, len).data, suffix) == 0;
+}
+
+char *str_replace(char *orig, char *rep, char *with) {
+  char *result;
+  char *ins;
+  char *tmp;
+  int len_rep;
+  int len_with;
+  int len_front;
+  int count;
+
+  if (!orig || !rep) {
+    return NULL;
+  }
+  len_rep = strlen(rep);
+  if (len_rep == 0) {
+    return NULL;
+  }
+  if (!with) {
+    with = "";
+  }
+  len_with = strlen(with);
+
+  ins = orig;
+  for (count = 0; (tmp = strstr(ins, rep)); ++count) {
+    ins = tmp + len_rep;
+  }
+
+  tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+
+  if (!result) {
+    return NULL;
+  }
+
+  while (count--) {
+    ins = strstr(orig, rep);
+    len_front = ins - orig;
+    tmp = strncpy(tmp, orig, len_front) + len_front;
+    tmp = strcpy(tmp, with) + len_with;
+    orig += len_front + len_rep;
+  }
+  strcpy(tmp, orig);
+  return result;
+}
+
+void str_tolower(char *str) {
+  for (int i = 0; str[i]; i++) {
+    str[i] = tolower(str[i]);
   }
 }
 

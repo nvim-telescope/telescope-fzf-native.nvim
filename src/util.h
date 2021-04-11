@@ -1,3 +1,6 @@
+#ifndef _UTIL_H_
+#define _UTIL_H_
+
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -34,8 +37,6 @@ typedef struct {
 #define slice_def(name, type)                                                  \
   typedef struct {                                                             \
     type *data;                                                                \
-    int32_t from;                                                              \
-    int32_t to;                                                                \
     int32_t size;                                                              \
   } name##_slice_t;                                                            \
                                                                                \
@@ -54,8 +55,17 @@ int32_t trailing_whitespaces(chars_t *chars);
 void copy_runes(chars_t *chars, i32_t *destination);
 void copy_into_i16(i16_t *dest, i16_slice_t *src);
 
+// char* helpers
+char *trim_left(char *str, int32_t len, char trim, int32_t *new_len);
+bool has_prefix(char *str, char *prefix, int32_t prefix_len);
+bool has_suffix(char *str, int32_t len, char *suffix, int32_t suffix_len);
+char *str_replace(char *orig, char *rep, char *with);
+void str_tolower(char *str);
+
 // min + max
 int16_t min16(int16_t a, int16_t b);
 int16_t max16(int16_t a, int16_t b);
 int32_t min32(int32_t a, int32_t b);
 int32_t max32(int32_t a, int32_t b);
+
+#endif // _UTIL_H_
