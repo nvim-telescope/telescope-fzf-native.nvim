@@ -21,6 +21,7 @@ int32_t index_at(int32_t index, int32_t max, bool forward) {
 
 position_t *pos_array(bool with_pos, int32_t len) {
   if (with_pos) {
+    printf("pos_array should never be called\n");
     position_t *pos = malloc(sizeof(position_t));
     pos->size = 0;
     pos->cap = len;
@@ -36,9 +37,10 @@ void append_pos(position_t *pos, int32_t value) {
   pos->size += 1;
 }
 
-i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size) {
+i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
   if (slab != NULL && slab->I16.cap > *offset + size) {
     i16_t *ret = malloc(sizeof(i16_t));
+    *allocated = false;
     i16_slice_t slice = slice_i16(slab->I16.data, *offset, (*offset) + size);
     ret->data = slice.data;
     ret->size = slice.size;
@@ -47,19 +49,21 @@ i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size) {
     return ret;
   }
   i16_t *ret = malloc(sizeof(i16_t));
+  *allocated = true;
   ret->data = malloc(size * sizeof(int16_t));
   ret->size = size;
   ret->cap = size;
   return ret;
 }
 
-i16_t *alloc16_no(int32_t offset, slab_t *slab, int32_t size) {
-  return alloc16(&offset, slab, size);
+i16_t *alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
+  return alloc16(&offset, slab, size, allocated);
 }
 
-i32_t *alloc32(int32_t *offset, slab_t *slab, int32_t size) {
+i32_t *alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
   if (slab != NULL && slab->I32.cap > *offset + size) {
     i32_t *ret = malloc(sizeof(i32_t));
+    *allocated = false;
     i32_slice_t slice = slice_i32(slab->I32.data, *offset, (*offset) + size);
     ret->data = slice.data;
     ret->size = slice.size;
@@ -68,14 +72,15 @@ i32_t *alloc32(int32_t *offset, slab_t *slab, int32_t size) {
     return ret;
   }
   i32_t *ret = malloc(sizeof(i32_t));
+  *allocated = true;
   ret->data = malloc(size * sizeof(int32_t));
   ret->size = size;
   ret->cap = size;
   return ret;
 }
 
-i32_t *alloc32_no(int32_t offset, slab_t *slab, int32_t size) {
-  return alloc32(&offset, slab, size);
+i32_t *alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
+  return alloc32(&offset, slab, size, allocated);
 }
 
 charClass char_class_of_ascii(rune ch) {
@@ -217,14 +222,19 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 
   int32_t offset16 = 0;
   int32_t offset32 = 0;
-  i16_t *H0 = alloc16(&offset16, slab, N);
-  i16_t *C0 = alloc16(&offset16, slab, N);
+  bool allocated_H0 = false;
+  bool allocated_C0 = false;
+  i16_t *H0 = alloc16(&offset16, slab, N, &allocated_H0);
+  i16_t *C0 = alloc16(&offset16, slab, N, &allocated_C0);
   // Bonus point for each positions
-  i16_t *B = alloc16(&offset16, slab, N);
+  bool allocated_B = false;
+  i16_t *B = alloc16(&offset16, slab, N, &allocated_B);
   // The first occurrence of each character in the pattern
-  i32_t *F = alloc32(&offset32, slab, M);
+  bool allocated_F = false;
+  i32_t *F = alloc32(&offset32, slab, M, &allocated_F);
   // Rune array
-  i32_t *T = alloc32_no(offset32, slab, N);
+  bool allocated_T = false;
+  i32_t *T = alloc32_no(offset32, slab, N, &allocated_T);
   copy_runes(input, T); // input.CopyRunes(T)
 
   // Phase 2. Calculate bonus for each point
@@ -305,9 +315,19 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     prevH0 = H0sub.data[off];
   }
   if (pidx != M) {
+    free_alloc(T, allocated_T);
+    free_alloc(F, allocated_F);
+    free_alloc(B, allocated_B);
+    free_alloc(C0, allocated_C0);
+    free_alloc(H0, allocated_H0);
     return (result_t){-1, -1, 0, NULL};
   }
   if (M == 1) {
+    free_alloc(T, allocated_T);
+    free_alloc(F, allocated_F);
+    free_alloc(B, allocated_B);
+    free_alloc(C0, allocated_C0);
+    free_alloc(H0, allocated_H0);
     result_t res = {max_score_pos, max_score_pos + 1, max_score, NULL};
     if (!with_pos) {
       return res;
@@ -320,13 +340,15 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 
   int32_t f0 = F->data[0];
   int32_t width = last_idx - f0 + 1;
-  i16_t *H = alloc16(&offset16, slab, width * M);
+  bool allocated_H = false;
+  i16_t *H = alloc16(&offset16, slab, width * M, &allocated_H);
   {
     i16_slice_t H0_tmp_slice = slice_i16(H0->data, f0, last_idx + 1);
     copy_into_i16(H, &H0_tmp_slice);
   }
 
-  i16_t *C = alloc16_no(offset16, slab, width * M);
+  bool allocated_C = false;
+  i16_t *C = alloc16_no(offset16, slab, width * M, &allocated_C);
   {
     i16_slice_t C0_tmp_slice = slice_i16(C0->data, f0, last_idx + 1);
     copy_into_i16(C, &C0_tmp_slice);
@@ -433,6 +455,13 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     }
   }
 
+  free_alloc(H, allocated_H);
+  free_alloc(C, allocated_C);
+  free_alloc(T, allocated_T);
+  free_alloc(F, allocated_F);
+  free_alloc(B, allocated_B);
+  free_alloc(C0, allocated_C0);
+  free_alloc(H0, allocated_H0);
   return (result_t){j, max_score_pos + 1, (int32_t)max_score, pos};
 }
 
@@ -779,15 +808,32 @@ int32_t get_match(bool case_sensitive, bool normalize, char *text,
   asdf.slice.data = text;
   asdf.slice.size = strlen(text);
 
+  // 200KB * 32 = 12.8MB, 8KB * 32 = 256KB
+  /* slab_t *slab = make_slab(100 * 1024, 2048); */
+  slab_t *slab = NULL;
+
   int32_t pat_len = strlen(pattern);
   if (pattern[pat_len - 1] == '$') {
     pattern[pat_len - 1] = 0;
     return suffix_match(case_sensitive, normalize, true, &asdf, pattern, false,
-                        NULL)
+                        slab)
         .score;
   }
 
   return fuzzy_match_v2(case_sensitive, normalize, true, &asdf, pattern, false,
-                        NULL)
+                        slab)
       .score;
+}
+
+slab_t *make_slab(int32_t size_16, int32_t size_32) {
+  slab_t *slab = malloc(sizeof(slab_t));
+  slab->I16.data = malloc(size_16 * sizeof(int16_t));
+  slab->I16.cap = size_16;
+  slab->I16.size = 0;
+
+  slab->I32.data = malloc(size_16 * sizeof(int16_t));
+  slab->I32.cap = size_16;
+  slab->I32.size = 0;
+
+  return slab;
 }
