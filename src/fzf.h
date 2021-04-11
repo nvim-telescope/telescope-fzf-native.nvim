@@ -138,8 +138,8 @@ term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
 term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
                              char *pattern);
 
-int32_t get_match(bool case_sensitive, bool normalize, char *text,
-                  char *pattern);
+int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
+                      char *pattern);
 
 slab_t *make_slab(int32_t size_16, int32_t size_32);
 
