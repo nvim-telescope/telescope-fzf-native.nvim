@@ -10,20 +10,6 @@ int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                   char *pattern);
 ]]
 
--- local get_pattern_fun = function(prompt)
---   local pattern = ffi.new("char[?]", #prompt + 1)
---   ffi.copy(pattern, prompt)
-
---   local st = native.build_pattern_fun(false, false, pattern)
---   local res = {}
---   for i = 0, st.size - 1 do
---     local e = st.ptr[i]
---     res[i + 1] = { typ = tonumber(e.ptr[0].typ), text = ffi.string(e.ptr[0].text) }
---   end
-
---   return res
--- end
-
 local get_score = function(input, prompt)
   local text = ffi.new("char[?]", #input + 1)
   local pattern = ffi.new("char[?]", #prompt + 1)
@@ -50,14 +36,6 @@ end
 --   end
 --   return res
 -- end
-
--- print(vim.inspect(get_pattern_fun("^install yaml$")))
-
--- print("fuzzy: (prompt: fzf, enum_should: 0, enum_is: " .. tostring(get_pattern_fun("fzf")[1].typ) .. ")")
--- print("exact: (prompt: 'fzf, enum_should: 1, enum_is: " .. tostring(get_pattern_fun("'fzf")[1].typ) .. ")")
--- print("prefix: (prompt: ^fzf, enum_should: 2, enum_is: " .. tostring(get_pattern_fun("^fzf")[1].typ) .. ")")
--- print("suffix: (prompt: fzf$, enum_should: 3, enum_is: " .. tostring(get_pattern_fun("fzf$")[1].typ) .. ")")
--- print("equal: (prompt: ^fzf$, enum_should: 4, enum_is: " .. tostring(get_pattern_fun("^fzf$")[1].typ) .. ")")
 
 -- test1()
 -- print('fzf', #test2('fzf'))

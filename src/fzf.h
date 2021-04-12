@@ -54,11 +54,11 @@ typedef enum {
 position_t *pos_array(bool with_pos, int32_t len);
 void append_pos(position_t *pos, int32_t value);
 
-i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
-i16_t *alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
+i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
+i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
 
-i32_t *alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
-i32_t *alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
+i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
+i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
 
 charClass char_class_of_ascii(rune ch);
 charClass char_class_of_non_ascii(rune ch); // TODO(conni2461)
@@ -97,9 +97,8 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
 // HELPERS
 #define free_alloc(obj, b)                                                     \
   if (b) {                                                                     \
-    free(obj->data);                                                           \
-  }                                                                            \
-  free(obj);
+    free(obj.data);                                                            \
+  }
 
 typedef enum {
   term_fuzzy = 0,
@@ -124,7 +123,7 @@ typedef struct {
 } term_set_t;
 
 typedef struct {
-  term_set_t *ptr;
+  term_set_t **ptr;
   int32_t size;
   int32_t cap;
 } term_set_sets_t;
@@ -142,5 +141,6 @@ int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                       char *pattern);
 
 slab_t *make_slab(int32_t size_16, int32_t size_32);
+void free_slab(slab_t *slab);
 
 #endif // _fzf_H_

@@ -45,6 +45,8 @@ typedef struct {
 slice_def(i16, int16_t);
 slice_def(i32, int32_t);
 slice_def(str, char);
+#undef slice_def
+
 int32_t index_byte(string_t *string, char b);
 
 // chars_t helpers

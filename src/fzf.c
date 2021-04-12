@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,7 +20,6 @@ int32_t index_at(int32_t index, int32_t max, bool forward) {
 
 position_t *pos_array(bool with_pos, int32_t len) {
   if (with_pos) {
-    printf("pos_array should never be called\n");
     position_t *pos = malloc(sizeof(position_t));
     pos->size = 0;
     pos->cap = len;
@@ -37,49 +35,37 @@ void append_pos(position_t *pos, int32_t value) {
   pos->size += 1;
 }
 
-i16_t *alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
+i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
   if (slab != NULL && slab->I16.cap > *offset + size) {
-    i16_t *ret = malloc(sizeof(i16_t));
     *allocated = false;
     i16_slice_t slice = slice_i16(slab->I16.data, *offset, (*offset) + size);
-    ret->data = slice.data;
-    ret->size = slice.size;
-    ret->cap = slice.size;
-    offset = offset + size;
-    return ret;
+    *offset = *offset + size;
+    return (i16_t){.data = slice.data, .size = slice.size, .cap = slice.size};
   }
-  i16_t *ret = malloc(sizeof(i16_t));
+  int16_t *data = malloc(size * sizeof(int16_t));
+  memset(data, 0, sizeof(*data));
   *allocated = true;
-  ret->data = malloc(size * sizeof(int16_t));
-  ret->size = size;
-  ret->cap = size;
-  return ret;
+  return (i16_t){.data = data, .size = size, .cap = size};
 }
 
-i16_t *alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
+i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
   return alloc16(&offset, slab, size, allocated);
 }
 
-i32_t *alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
+i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
   if (slab != NULL && slab->I32.cap > *offset + size) {
-    i32_t *ret = malloc(sizeof(i32_t));
     *allocated = false;
     i32_slice_t slice = slice_i32(slab->I32.data, *offset, (*offset) + size);
-    ret->data = slice.data;
-    ret->size = slice.size;
-    ret->cap = slice.size;
-    offset = offset + size;
-    return ret;
+    *offset = *offset + size;
+    return (i32_t){.data = slice.data, .size = slice.size, .cap = slice.size};
   }
-  i32_t *ret = malloc(sizeof(i32_t));
+  int32_t *data = malloc(size * sizeof(int32_t));
+  memset(data, 0, sizeof(*data));
   *allocated = true;
-  ret->data = malloc(size * sizeof(int32_t));
-  ret->size = size;
-  ret->cap = size;
-  return ret;
+  return (i32_t){.data = data, .size = size, .cap = size};
 }
 
-i32_t *alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
+i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
   return alloc32(&offset, slab, size, allocated);
 }
 
@@ -224,18 +210,18 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
   int32_t offset32 = 0;
   bool allocated_H0 = false;
   bool allocated_C0 = false;
-  i16_t *H0 = alloc16(&offset16, slab, N, &allocated_H0);
-  i16_t *C0 = alloc16(&offset16, slab, N, &allocated_C0);
+  i16_t H0 = alloc16(&offset16, slab, N, &allocated_H0);
+  i16_t C0 = alloc16(&offset16, slab, N, &allocated_C0);
   // Bonus point for each positions
   bool allocated_B = false;
-  i16_t *B = alloc16(&offset16, slab, N, &allocated_B);
+  i16_t B = alloc16(&offset16, slab, N, &allocated_B);
   // The first occurrence of each character in the pattern
   bool allocated_F = false;
-  i32_t *F = alloc32(&offset32, slab, M, &allocated_F);
+  i32_t F = alloc32(&offset32, slab, M, &allocated_F);
   // Rune array
   bool allocated_T = false;
-  i32_t *T = alloc32_no(offset32, slab, N, &allocated_T);
-  copy_runes(input, T); // input.CopyRunes(T)
+  i32_t T = alloc32_no(offset32, slab, N, &allocated_T);
+  copy_runes(input, &T); // input.CopyRunes(T)
 
   // Phase 2. Calculate bonus for each point
   int16_t max_score = 0;
@@ -250,13 +236,13 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
   int32_t prev_class = char_non_word;
   bool in_gap = false;
 
-  i32_slice_t Tsub = slice_i32(T->data, idx, T->size); // T[idx:];
+  i32_slice_t Tsub = slice_i32(T.data, idx, T.size); // T[idx:];
   i16_slice_t H0sub =
-      slice_i16_right(slice_i16(H0->data, idx, H0->size).data, Tsub.size);
+      slice_i16_right(slice_i16(H0.data, idx, H0.size).data, Tsub.size);
   i16_slice_t C0sub =
-      slice_i16_right(slice_i16(C0->data, idx, C0->size).data, Tsub.size);
+      slice_i16_right(slice_i16(C0.data, idx, C0.size).data, Tsub.size);
   i16_slice_t Bsub =
-      slice_i16_right(slice_i16(B->data, idx, B->size).data, Tsub.size);
+      slice_i16_right(slice_i16(B.data, idx, B.size).data, Tsub.size);
 
   for (int32_t off = 0; off < Tsub.size; off++) {
     charClass class;
@@ -283,7 +269,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     prev_class = class;
     if (c == pchar) {
       if (pidx < M) {
-        F->data[pidx] = (int32_t)(idx + off);
+        F.data[pidx] = (int32_t)(idx + off);
         pidx++;
         pchar = pattern[min32(pidx, M - 1)];
       }
@@ -338,23 +324,23 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     return res;
   }
 
-  int32_t f0 = F->data[0];
+  int32_t f0 = F.data[0];
   int32_t width = last_idx - f0 + 1;
   bool allocated_H = false;
-  i16_t *H = alloc16(&offset16, slab, width * M, &allocated_H);
+  i16_t H = alloc16(&offset16, slab, width * M, &allocated_H);
   {
-    i16_slice_t H0_tmp_slice = slice_i16(H0->data, f0, last_idx + 1);
-    copy_into_i16(H, &H0_tmp_slice);
+    i16_slice_t H0_tmp_slice = slice_i16(H0.data, f0, last_idx + 1);
+    copy_into_i16(&H, &H0_tmp_slice);
   }
 
   bool allocated_C = false;
-  i16_t *C = alloc16_no(offset16, slab, width * M, &allocated_C);
+  i16_t C = alloc16_no(offset16, slab, width * M, &allocated_C);
   {
-    i16_slice_t C0_tmp_slice = slice_i16(C0->data, f0, last_idx + 1);
-    copy_into_i16(C, &C0_tmp_slice);
+    i16_slice_t C0_tmp_slice = slice_i16(C0.data, f0, last_idx + 1);
+    copy_into_i16(&C, &C0_tmp_slice);
   }
 
-  i32_slice_t Fsub = slice_i32(F->data, 1, F->size);
+  i32_slice_t Fsub = slice_i32(F.data, 1, F.size);
   str_slice_t Psub = slice_str_right(slice_str(pattern, 1, M).data, Fsub.size);
   for (int32_t off = 0; off < Fsub.size; off++) {
     int32_t f = Fsub.data[off];
@@ -362,18 +348,18 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     pidx = off + 1;
     int32_t row = pidx * width;
     in_gap = false;
-    Tsub = slice_i32(T->data, f, last_idx + 1);
-    Bsub = slice_i16_right(slice_i16(B->data, f, B->size).data, Tsub.size);
+    Tsub = slice_i32(T.data, f, last_idx + 1);
+    Bsub = slice_i16_right(slice_i16(B.data, f, B.size).data, Tsub.size);
     i16_slice_t Csub = slice_i16_right(
-        slice_i16(C->data, row + f - f0, C->size).data, Tsub.size);
+        slice_i16(C.data, row + f - f0, C.size).data, Tsub.size);
     i16_slice_t Cdiag = slice_i16_right(
-        slice_i16(C->data, row + f - f0 - 1 - width, C->size).data, Tsub.size);
+        slice_i16(C.data, row + f - f0 - 1 - width, C.size).data, Tsub.size);
     i16_slice_t Hsub = slice_i16_right(
-        slice_i16(H->data, row + f - f0, H->size).data, Tsub.size);
+        slice_i16(H.data, row + f - f0, H.size).data, Tsub.size);
     i16_slice_t Hdiag = slice_i16_right(
-        slice_i16(H->data, row + f - f0 - 1 - width, H->size).data, Tsub.size);
+        slice_i16(H.data, row + f - f0 - 1 - width, H.size).data, Tsub.size);
     i16_slice_t Hleft = slice_i16_right(
-        slice_i16(H->data, row + f - f0 - 1, H->size).data, Tsub.size);
+        slice_i16(H.data, row + f - f0 - 1, H.size).data, Tsub.size);
     Hleft.data[0] = 0;
     for (int32_t j = 0; j < Tsub.size; j++) {
       char c = Tsub.data[j];
@@ -396,7 +382,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
           consecutive = 1;
         } else if (consecutive > 1) {
           b = max16(b, max16(bonus_consecutive,
-                             B->data[col - ((int32_t)consecutive) + 1]));
+                             B.data[col - ((int32_t)consecutive) + 1]));
         }
         if (s1 + b < s2) {
           s1 += Bsub.data[j];
@@ -431,15 +417,15 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     for (;;) {
       int32_t I = i * width;
       int32_t j0 = j - f0;
-      int16_t s = H->data[I + j0];
+      int16_t s = H.data[I + j0];
 
       int16_t s1 = 0;
       int16_t s2 = 0;
-      if (i > 0 && j >= F->data[i]) {
-        s1 = H->data[I - width + j0 - 1];
+      if (i > 0 && j >= F.data[i]) {
+        s1 = H.data[I - width + j0 - 1];
       }
-      if (j > F->data[i]) {
-        s2 = H->data[I + j0 - 1];
+      if (j > F.data[i]) {
+        s2 = H.data[I + j0 - 1];
       }
 
       if (s > s1 && (s > s2 || (s == s2 && prefer_match))) {
@@ -449,8 +435,8 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
         }
         i--;
       }
-      prefer_match = C->data[I + j0] > 1 || (I + width + j0 + 1 < C->size &&
-                                             C->data[I + width + j0 + 1] > 0);
+      prefer_match = C.data[I + j0] > 1 || (I + width + j0 + 1 < C.size &&
+                                            C.data[I + width + j0 + 1] > 0);
       j--;
     }
   }
@@ -799,7 +785,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
 void append_set(term_set_t *set, term_t value) {
   if (set->cap == 0) {
     set->cap = 1;
-    set->ptr = malloc(sizeof(term_set_t));
+    set->ptr = malloc(sizeof(term_t));
   } else if (set->size + 1 > set->cap) {
     // I want to keep this set as thight as possible. This function should not
     // be called that often because it only happens inside the prompt
@@ -807,7 +793,6 @@ void append_set(term_set_t *set, term_t value) {
     set->cap += 1;
     set->ptr = realloc(set->ptr, sizeof(term_t) * set->cap);
     assert(set->ptr != NULL);
-    printf("resizing\n");
   }
   set->ptr[set->size] = value;
   set->size += 1;
@@ -816,14 +801,14 @@ void append_set(term_set_t *set, term_t value) {
 void append_sets(term_set_sets_t *set, term_set_t *value) {
   if (set->cap == 0) {
     set->cap = 1;
-    set->ptr = malloc(sizeof(term_set_t));
+    set->ptr = malloc(sizeof(term_set_t *));
   } else if (set->size + 1 > set->cap) {
     // Same reason as append_set. Need to think about this more
     set->cap += 1;
-    set->ptr = realloc(set->ptr, sizeof(term_set_t) * set->cap);
+    set->ptr = realloc(set->ptr, sizeof(term_set_t *) * set->cap);
     assert(set->ptr != NULL);
   }
-  set->ptr[set->size] = *value;
+  set->ptr[set->size] = value;
   set->size += 1;
 }
 
@@ -864,27 +849,23 @@ term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
 
 term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
                              char *pattern) {
-  pattern = str_replace(pattern, "\\ ", "\t");
+  char *pattern_copy = str_replace(pattern, "\\ ", "\t");
+
   const char *delim = " ";
-  char *ptr = strtok(pattern, delim);
+  char *ptr = strtok(pattern_copy, delim);
 
   term_set_sets_t *sets = malloc(sizeof(term_set_sets_t));
-  sets->size = 0;
-  sets->cap = 0;
+  memset(sets, 0, sizeof(*sets));
   term_set_t *set = malloc(sizeof(term_set_t));
-  set->size = 0;
-  set->cap = 0;
+  memset(set, 0, sizeof(*set));
 
   bool switch_set = false;
   bool after_bar = false;
   while (ptr != NULL) {
     alg_types typ = term_fuzzy;
     bool inv = false;
-    ptr = str_replace(ptr, "\t", " ");
-
-    int32_t len = strlen(ptr);
-    char *text = malloc(len * sizeof(char) + 1);
-    strcpy(text, ptr);
+    char *text = str_replace(ptr, "\t", " ");
+    int32_t len = strlen(text);
     /* char *lower_text = str_tolower(text); */
     /* caseSensitive = caseMode == CaseRespect || */
     /*                   caseMode == CaseSmart &&text != lowerText; */
@@ -955,7 +936,10 @@ term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
   }
   if (set->size > 0) {
     append_sets(sets, set);
+  } else {
+    free(set);
   }
+  free(pattern_copy);
   return sets;
 }
 
@@ -969,13 +953,13 @@ int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
   input.slice.size = strlen(text);
 
   // 200KB * 32 = 12.8MB, 8KB * 32 = 256KB
-  /* slab_t *slab = make_slab(100 * 1024, 2048); */
-  slab_t *slab = NULL;
+  slab_t *slab = make_slab(100 * 1024, 2048);
+  /* slab_t *slab = NULL; */
 
   term_set_sets_t *set = build_pattern_fun(case_sensitive, normalize, pattern);
   int32_t total_score = 0;
   for (int i = 0; i < set->size; i++) {
-    term_set_t *term_set = &set->ptr[i];
+    term_set_t *term_set = set->ptr[i];
     int32_t current_score = 0;
     for (int j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
@@ -1010,21 +994,41 @@ int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                              .score;
         break;
       }
+      free(term->text);
     }
+    free(term_set->ptr);
+    free(term_set);
     total_score += current_score;
   }
+  free(set->ptr);
+  free(set);
+
+  free_slab(slab);
+
   return total_score;
 }
 
 slab_t *make_slab(int32_t size_16, int32_t size_32) {
   slab_t *slab = malloc(sizeof(slab_t));
+  memset(slab, 0, sizeof(*slab));
+
   slab->I16.data = malloc(size_16 * sizeof(int16_t));
+  memset(slab->I16.data, 0, size_16 * sizeof(*slab->I16.data));
   slab->I16.cap = size_16;
   slab->I16.size = 0;
 
-  slab->I32.data = malloc(size_16 * sizeof(int16_t));
+  slab->I32.data = malloc(size_32 * sizeof(int32_t));
+  memset(slab->I32.data, 0, size_32 * sizeof(*slab->I32.data));
   slab->I32.cap = size_16;
   slab->I32.size = 0;
 
   return slab;
+}
+
+void free_slab(slab_t *slab) {
+  if (slab) {
+    free(slab->I16.data);
+    free(slab->I32.data);
+    free(slab);
+  }
 }
