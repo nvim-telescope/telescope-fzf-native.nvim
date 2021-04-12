@@ -1,74 +1,60 @@
-local ffi = require'ffi'
-
-local dirname = string.sub(debug.getinfo(1).source, 2, string.len('/fzf.lua') * -1)
-local library_path = dirname .. '../../../build/libfzf.so'
-
-local native = ffi.load(library_path)
-
-ffi.cdef[[
-int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
-                  char *pattern);
-]]
-
-local get_score = function(input, prompt)
-  local text = ffi.new("char[?]", #input + 1)
-  local pattern = ffi.new("char[?]", #prompt + 1)
-  ffi.copy(text, input)
-  ffi.copy(pattern, prompt)
-
-  return native.get_match_bad(false, false, text, pattern)
+local if_nil = function(x, y)
+  if x == nil then return y end
+  return x
 end
 
--- local test1 = function()
---   print(get_score('install.conf.yaml', 'install yam'))
--- end
-
--- local test2 = function(prompt)
---   local scan = require'plenary.scandir'
---   local files = scan.scan_dir(vim.fn.expand('~'), { add_dirs = true })
-
---   local res = {}
---   for _, v in ipairs(files) do
---     local s = get_score(v, prompt)
---     if s ~= 0 then
---       table.insert(res, { v, s })
---     end
---   end
---   return res
--- end
-
--- test1()
--- print('fzf', #test2('fzf'))
--- print('fzf.h', #test2('fzf.h'))
--- print('fzf.h$', #test2('fzf.h$'))
-
+local fzf = require('fzf')
 local sorters = require('telescope.sorters')
 
 local get_fzf_sorter = function()
   return sorters.Sorter:new{
-    scoring_function = function(_, prompt, line)
+    init = function(self)
+      self.state.slab = fzf.allocate_slab()
+      self.state.prompt_cache = {}
+    end,
+    destroy = function(self)
+      for _, v in pairs(self.state.prompt_cache) do
+        fzf.free_prompt(v)
+      end
+      fzf.free_slab(self.state.slab)
+    end,
+    discard = false,
+    scoring_function = function(self, prompt, line)
       if prompt == "" then
-        return 0
+        return 1
       end
 
-      local score = get_score(line, prompt)
+      local struct = self.state.prompt_cache[prompt]
+      if not struct then
+        struct = fzf.parse_prompt(prompt)
+        self.state.prompt_cache[prompt] = struct
+      end
+
+      local score = fzf.get_score(line, struct, self.state.slab)
       if score == 0 then
         return -1
       else
-        return score
+        return 1 / score
       end
     end,
   }
 end
 
 return require('telescope').register_extension {
-  setup = function(_, config)
-    config.file_sorter = function()
-      return get_fzf_sorter()
+  setup = function(ext_config, config)
+    local override_file = if_nil(ext_config.override_file_sorter, true)
+    local override_generic = if_nil(ext_config.override_generic_sorter, true)
+
+    if override_file then
+      config.file_sorter = function()
+        return get_fzf_sorter()
+      end
     end
 
-    config.generic_sorter = function()
-      return get_fzf_sorter()
+    if override_generic then
+      config.generic_sorter = function()
+        return get_fzf_sorter()
+      end
     end
   end,
   exports = {

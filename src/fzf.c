@@ -866,6 +866,7 @@ term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
     bool inv = false;
     char *text = str_replace(ptr, "\t", " ");
     int32_t len = strlen(text);
+    char *og_str = text;
     /* char *lower_text = str_tolower(text); */
     /* caseSensitive = caseMode == CaseRespect || */
     /*                   caseMode == CaseSmart &&text != lowerText; */
@@ -926,6 +927,7 @@ term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
       // TODO(conni2461):
       append_set(set, (term_t){.typ = typ,
                                .inv = inv,
+                               .og_str = og_str,
                                .text = text, // DO I NEED TO COPY HERE?!
                                .case_sensitive = case_sensitive, // not correct
                                .normalize = normalize});         // not correct
@@ -936,11 +938,75 @@ term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
   }
   if (set->size > 0) {
     append_sets(sets, set);
-  } else {
-    free(set);
   }
   free(pattern_copy);
   return sets;
+}
+
+void free_sets(term_set_sets_t *sets) {
+  for (int i = 0; i < sets->size; i++) {
+    term_set_t *term_set = sets->ptr[i];
+    for (int j = 0; j < term_set->size; j++) {
+      term_t *term = &term_set->ptr[j];
+      free(term->og_str);
+    }
+    free(term_set->ptr);
+    free(term_set);
+  }
+  free(sets->ptr);
+  free(sets);
+}
+
+int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab) {
+  chars_t input = {.slice = {NULL},
+                   .in_bytes = false,
+                   .trim_length_known = false,
+                   .index = 0};
+  input.slice.data = text;
+  input.slice.size = strlen(text);
+
+  int32_t total_score = 0;
+  for (int i = 0; i < sets->size; i++) {
+    term_set_t *term_set = sets->ptr[i];
+    int32_t current_score = 0;
+    for (int j = 0; j < term_set->size; j++) {
+      term_t *term = &term_set->ptr[j];
+      if (term->inv) {
+        continue;
+      }
+      switch (term->typ) {
+      case term_fuzzy:
+        current_score += fuzzy_match_v2(term->case_sensitive, term->normalize,
+                                        true, &input, term->text, false, slab)
+                             .score;
+        break;
+      case term_exact:
+        current_score +=
+            exact_match_naive(term->case_sensitive, term->normalize, true,
+                              &input, term->text, false, slab)
+                .score;
+        break;
+      case term_prefix:
+        current_score += prefix_match(term->case_sensitive, term->normalize,
+                                      true, &input, term->text, false, slab)
+                             .score;
+        break;
+      case term_suffix:
+        current_score += suffix_match(term->case_sensitive, term->normalize,
+                                      true, &input, term->text, false, slab)
+                             .score;
+        break;
+      case term_equal:
+        current_score += equal_match(term->case_sensitive, term->normalize,
+                                     true, &input, term->text, false, slab)
+                             .score;
+        break;
+      }
+    }
+    total_score += current_score;
+  }
+
+  return total_score;
 }
 
 int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
@@ -952,11 +1018,9 @@ int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
   input.slice.data = text;
   input.slice.size = strlen(text);
 
-  // 200KB * 32 = 12.8MB, 8KB * 32 = 256KB
   slab_t *slab = make_slab(100 * 1024, 2048);
-  /* slab_t *slab = NULL; */
-
   term_set_sets_t *set = build_pattern_fun(case_sensitive, normalize, pattern);
+
   int32_t total_score = 0;
   for (int i = 0; i < set->size; i++) {
     term_set_t *term_set = set->ptr[i];
@@ -996,9 +1060,9 @@ int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
       }
       free(term->text);
     }
+    total_score += current_score;
     free(term_set->ptr);
     free(term_set);
-    total_score += current_score;
   }
   free(set->ptr);
   free(set);

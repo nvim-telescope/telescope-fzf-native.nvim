@@ -111,6 +111,7 @@ typedef enum {
 typedef struct {
   alg_types typ;
   bool inv;
+  char *og_str;
   char *text;
   bool case_sensitive;
   bool normalize;
@@ -136,7 +137,9 @@ term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
                                    char *pattern);
 term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
                              char *pattern);
+void free_sets(term_set_sets_t *sets);
 
+int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab);
 int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                       char *pattern);
 
