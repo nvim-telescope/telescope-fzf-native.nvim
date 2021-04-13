@@ -44,6 +44,13 @@ ffi.cdef[[
     int32_t cap;
   } term_set_sets_t;
 
+  typedef struct {
+    int32_t *data;
+    int32_t size;
+    int32_t cap;
+  } position_t;
+
+  position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab);
   int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab);
   int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                         char *pattern);
@@ -71,6 +78,19 @@ fzf.get_score = function(input, prompt_struct, slab)
   local text = ffi.new("char[?]", #input + 1)
   ffi.copy(text, input)
   return native.get_match(text, prompt_struct, slab)
+end
+
+fzf.get_pos = function(input, prompt_struct, slab)
+  local text = ffi.new("char[?]", #input + 1)
+  ffi.copy(text, input)
+  local pos = native.get_positions(text, prompt_struct, slab)
+  local res = {}
+  for i = 0, pos.size - 1 do
+    res[i + 1] = pos.data[i] + 1
+  end
+  ffi.C.free(pos.data)
+
+  return res
 end
 
 fzf.parse_prompt = function(prompt)

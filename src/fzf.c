@@ -30,9 +30,23 @@ position_t *pos_array(bool with_pos, int32_t len) {
 }
 
 void append_pos(position_t *pos, int32_t value) {
-  assert(pos->size < pos->cap);
+  if (pos->size + 1 > pos->cap) {
+    pos->cap += 1;
+    pos->data = realloc(pos->data, sizeof(int32_t) * pos->cap);
+    assert(pos->data != NULL);
+  }
   pos->data[pos->size] = value;
   pos->size += 1;
+}
+
+void concat_pos(position_t *left, position_t *right) {
+  if (left->size + right->size > left->cap) {
+    left->cap += right->size;
+    left->data = realloc(left->data, sizeof(int32_t) * left->cap);
+    assert(left->data != NULL);
+  }
+  memcpy(left->data + left->size, right->data, right->size * sizeof(float));
+  left->size += right->size;
 }
 
 i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
@@ -1007,6 +1021,75 @@ int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab) {
   }
 
   return total_score;
+}
+
+position_t *get_pos_by_result(result_t res) {
+  position_t *pos = pos_array(true, res.end - res.start);
+  for (int i = res.start; i < res.end; i++) {
+    append_pos(pos, i);
+  }
+
+  return pos;
+}
+
+position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab) {
+  chars_t input = {.slice = {NULL},
+                   .in_bytes = false,
+                   .trim_length_known = false,
+                   .index = 0};
+  input.slice.data = text;
+  input.slice.size = strlen(text);
+
+  position_t all_pos;
+  all_pos.cap = 1;
+  all_pos.size = 0;
+  all_pos.data = malloc(sizeof(int32_t));
+
+  for (int i = 0; i < sets->size; i++) {
+    term_set_t *term_set = sets->ptr[i];
+    for (int j = 0; j < term_set->size; j++) {
+      term_t *term = &term_set->ptr[j];
+      position_t *current_pos;
+      if (term->inv) {
+        continue;
+      }
+      switch (term->typ) {
+      case term_fuzzy:
+        current_pos = fuzzy_match_v2(term->case_sensitive, term->normalize,
+                                     true, &input, term->text, true, slab)
+                          .pos;
+        break;
+      case term_exact:
+        current_pos = get_pos_by_result(
+            exact_match_naive(term->case_sensitive, term->normalize, true,
+                              &input, term->text, true, slab));
+
+        break;
+      case term_prefix:
+        current_pos = get_pos_by_result(
+            prefix_match(term->case_sensitive, term->normalize, true, &input,
+                         term->text, true, slab));
+        break;
+      case term_suffix:
+        current_pos = get_pos_by_result(
+            suffix_match(term->case_sensitive, term->normalize, true, &input,
+                         term->text, true, slab));
+        break;
+      case term_equal:
+        current_pos = get_pos_by_result(
+            equal_match(term->case_sensitive, term->normalize, true, &input,
+                        term->text, true, slab));
+        break;
+      }
+      if (current_pos) {
+        concat_pos(&all_pos, current_pos);
+        free(current_pos->data);
+        free(current_pos);
+      }
+    }
+  }
+
+  return all_pos;
 }
 
 int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,

@@ -53,6 +53,7 @@ typedef enum {
 
 position_t *pos_array(bool with_pos, int32_t len);
 void append_pos(position_t *pos, int32_t value);
+void concat_pos(position_t *left, position_t *right);
 
 i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
 i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
@@ -139,6 +140,7 @@ term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
                              char *pattern);
 void free_sets(term_set_sets_t *sets);
 
+position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab);
 int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab);
 int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                       char *pattern);

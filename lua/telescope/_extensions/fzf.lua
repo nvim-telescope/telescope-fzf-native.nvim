@@ -7,6 +7,15 @@ local fzf = require('fzf')
 local sorters = require('telescope.sorters')
 
 local get_fzf_sorter = function()
+  local get_struct = function(self, prompt)
+    local struct = self.state.prompt_cache[prompt]
+    if not struct then
+      struct = fzf.parse_prompt(prompt)
+      self.state.prompt_cache[prompt] = struct
+    end
+    return struct
+  end
+
   return sorters.Sorter:new{
     init = function(self)
       self.state.slab = fzf.allocate_slab()
@@ -24,18 +33,15 @@ local get_fzf_sorter = function()
         return 1
       end
 
-      local struct = self.state.prompt_cache[prompt]
-      if not struct then
-        struct = fzf.parse_prompt(prompt)
-        self.state.prompt_cache[prompt] = struct
-      end
-
-      local score = fzf.get_score(line, struct, self.state.slab)
+      local score = fzf.get_score(line, get_struct(self, prompt), self.state.slab)
       if score == 0 then
         return -1
       else
         return 1 / score
       end
+    end,
+    highlighter = function(self, prompt, display)
+      return fzf.get_pos(display, get_struct(self, prompt), self.state.slab)
     end,
   }
 end
