@@ -109,8 +109,6 @@ void free_sets(term_set_sets_t *sets);
 
 position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab);
 int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab);
-int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
-                      char *pattern);
 
 slab_t *make_slab(int32_t size_16, int32_t size_32);
 void free_slab(slab_t *slab);

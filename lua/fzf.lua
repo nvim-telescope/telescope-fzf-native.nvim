@@ -52,8 +52,6 @@ ffi.cdef[[
 
   position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab);
   int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab);
-  int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
-                        char *pattern);
 
   term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
                                      char *pattern);
@@ -66,15 +64,6 @@ ffi.cdef[[
 ]]
 
 local fzf = {}
-
-fzf.get_score_bad = function(input, prompt)
-  local text = ffi.new("char[?]", #input + 1)
-  local pattern = ffi.new("char[?]", #prompt + 1)
-  ffi.copy(text, input)
-  ffi.copy(pattern, prompt)
-
-  return native.get_match_bad(false, false, text, pattern)
-end
 
 fzf.get_score = function(input, prompt_struct, slab)
   local text = ffi.new("char[?]", #input + 1)

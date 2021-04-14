@@ -979,6 +979,31 @@ void free_sets(term_set_sets_t *sets) {
   free(sets);
 }
 
+result_t get_result(term_t *term, string_t *input, slab_t *slab,
+                    bool with_pos) {
+  switch (term->typ) {
+  case term_fuzzy:
+    return fuzzy_match_v2(term->case_sensitive, term->normalize, true, input,
+                          term->text, false, slab);
+  case term_exact:
+    return exact_match_naive(term->case_sensitive, term->normalize, true, input,
+                             term->text, false, slab);
+  case term_prefix:
+    return prefix_match(term->case_sensitive, term->normalize, true, input,
+                        term->text, false, slab);
+  case term_suffix:
+    return suffix_match(term->case_sensitive, term->normalize, true, input,
+                        term->text, false, slab);
+  case term_equal:
+    return equal_match(term->case_sensitive, term->normalize, true, input,
+                       term->text, false, slab);
+  }
+
+  return (result_t){-1, -1, 0, NULL};
+}
+
+#include <stdio.h>
+
 int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab) {
   string_t input = {.data = text, .size = strlen(text)};
 
@@ -989,40 +1014,17 @@ int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab) {
     bool matched = false;
     for (int j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
-      int32_t score = 0;
-      if (term->inv) {
-        continue;
-      }
-      switch (term->typ) {
-      case term_fuzzy:
-        score = fuzzy_match_v2(term->case_sensitive, term->normalize, true,
-                               &input, term->text, false, slab)
-                    .score;
-        break;
-      case term_exact:
-        score = exact_match_naive(term->case_sensitive, term->normalize, true,
-                                  &input, term->text, false, slab)
-                    .score;
-        break;
-      case term_prefix:
-        score = prefix_match(term->case_sensitive, term->normalize, true,
-                             &input, term->text, false, slab)
-                    .score;
-        break;
-      case term_suffix:
-        score = suffix_match(term->case_sensitive, term->normalize, true,
-                             &input, term->text, false, slab)
-                    .score;
-        break;
-      case term_equal:
-        score = equal_match(term->case_sensitive, term->normalize, true, &input,
-                            term->text, false, slab)
-                    .score;
-        break;
-      }
-      if (score > 0) {
-        current_score += score;
+      result_t res = get_result(term, &input, slab, false);
+      if (res.start >= 0) {
+        if (term->inv) {
+          continue;
+        }
+        current_score = res.score;
         matched = true;
+      } else if (term->inv) {
+        current_score = 0;
+        matched = true;
+        continue;
       }
     }
     if (matched) {
@@ -1098,64 +1100,6 @@ position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab) {
   }
 
   return all_pos;
-}
-
-int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
-                      char *pattern) {
-  string_t input = {.data = text, .size = strlen(text)};
-
-  slab_t *slab = make_slab(100 * 1024, 2048);
-  term_set_sets_t *set = build_pattern_fun(case_sensitive, normalize, pattern);
-
-  int32_t total_score = 0;
-  for (int i = 0; i < set->size; i++) {
-    term_set_t *term_set = set->ptr[i];
-    int32_t current_score = 0;
-    for (int j = 0; j < term_set->size; j++) {
-      term_t *term = &term_set->ptr[j];
-      if (term->inv) {
-        continue;
-      }
-      switch (term->typ) {
-      case term_fuzzy:
-        current_score += fuzzy_match_v2(term->case_sensitive, term->normalize,
-                                        true, &input, term->text, false, slab)
-                             .score;
-        break;
-      case term_exact:
-        current_score +=
-            exact_match_naive(term->case_sensitive, term->normalize, true,
-                              &input, term->text, false, slab)
-                .score;
-        break;
-      case term_prefix:
-        current_score += prefix_match(term->case_sensitive, term->normalize,
-                                      true, &input, term->text, false, slab)
-                             .score;
-        break;
-      case term_suffix:
-        current_score += suffix_match(term->case_sensitive, term->normalize,
-                                      true, &input, term->text, false, slab)
-                             .score;
-        break;
-      case term_equal:
-        current_score += equal_match(term->case_sensitive, term->normalize,
-                                     true, &input, term->text, false, slab)
-                             .score;
-        break;
-      }
-      free(term->text);
-    }
-    total_score += current_score;
-    free(term_set->ptr);
-    free(term_set);
-  }
-  free(set->ptr);
-  free(set);
-
-  free_slab(slab);
-
-  return total_score;
 }
 
 slab_t *make_slab(int32_t size_16, int32_t size_32) {
