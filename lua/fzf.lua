@@ -18,7 +18,7 @@ ffi.cdef[[
     term_set_t **ptr;
     int32_t size;
     int32_t cap;
-  } prompt_t;
+  } pattern_t;
 
   typedef struct {
     int32_t *data;
@@ -26,11 +26,11 @@ ffi.cdef[[
     int32_t cap;
   } position_t;
 
-  position_t get_positions(char *text, prompt_t *prompt, slab_t *slab);
-  int32_t get_score(char *text, prompt_t *prompt, slab_t *slab);
+  position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
+  int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
-  prompt_t *parse_terms(int32_t case_mode, bool normalize, char *pattern);
-  void free_prompt(prompt_t *prompt);
+  pattern_t *parse_pattern(int32_t case_mode, bool normalize, char *pattern);
+  void free_pattern(pattern_t *pattern);
 
   slab_t *make_slab(int32_t size_16, int32_t size_32);
   void free_slab(slab_t *slab);
@@ -40,16 +40,16 @@ ffi.cdef[[
 
 local fzf = {}
 
-fzf.get_score = function(input, prompt_struct, slab)
+fzf.get_score = function(input, pattern_struct, slab)
   local text = ffi.new("char[?]", #input + 1)
   ffi.copy(text, input)
-  return native.get_score(text, prompt_struct, slab)
+  return native.get_score(text, pattern_struct, slab)
 end
 
-fzf.get_pos = function(input, prompt_struct, slab)
+fzf.get_pos = function(input, pattern_struct, slab)
   local text = ffi.new("char[?]", #input + 1)
   ffi.copy(text, input)
-  local pos = native.get_positions(text, prompt_struct, slab)
+  local pos = native.get_positions(text, pattern_struct, slab)
   local res = {}
   for i = 0, pos.size - 1 do
     res[i + 1] = pos.data[i] + 1
@@ -59,15 +59,15 @@ fzf.get_pos = function(input, prompt_struct, slab)
   return res
 end
 
-fzf.parse_prompt = function(prompt, case_mode)
+fzf.parse_pattern = function(pattern, case_mode)
   case_mode = case_mode == nil and 0 or case_mode
-  local pattern = ffi.new("char[?]", #prompt + 1)
-  ffi.copy(pattern, prompt)
-  return native.parse_terms(case_mode, false, pattern)
+  local c_str = ffi.new("char[?]", #pattern + 1)
+  ffi.copy(c_str, pattern)
+  return native.parse_pattern(case_mode, false, c_str)
 end
 
-fzf.free_prompt = function(p)
-  native.free_prompt(p)
+fzf.free_pattern = function(p)
+  native.free_pattern(p)
 end
 
 fzf.allocate_slab = function()

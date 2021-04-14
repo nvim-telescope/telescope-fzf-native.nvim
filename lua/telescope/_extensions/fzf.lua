@@ -19,11 +19,13 @@ local case_enum = setmetatable({
 
 local get_fzf_sorter = function(opts)
   local case_mode = case_enum[opts.case_mode]
+  local post_or = false
+  local post_inv = false
 
   local get_struct = function(self, prompt)
     local struct = self.state.prompt_cache[prompt]
     if not struct then
-      struct = fzf.parse_prompt(prompt, case_mode)
+      struct = fzf.parse_pattern(prompt, case_mode)
       self.state.prompt_cache[prompt] = struct
     end
     return struct
@@ -36,17 +38,43 @@ local get_fzf_sorter = function(opts)
     end,
     destroy = function(self)
       for _, v in pairs(self.state.prompt_cache) do
-        fzf.free_prompt(v)
+        fzf.free_pattern(v)
       end
       fzf.free_slab(self.state.slab)
     end,
-    discard = false,
+    start = function(self, prompt)
+      get_struct(self, prompt)
+      local last = prompt:sub(-1, -1)
+
+      if last == '|' then
+        self._discard_state.filtered = {}
+        post_or = true
+      elseif last == " " and post_or then
+        self._discard_state.filtered = {}
+      elseif post_or then
+        self._discard_state.filtered = {}
+        post_or = false
+      else
+        post_or = false
+      end
+
+      if last == '!' and not post_inv then
+        post_inv = true
+        self._discard_state.filtered = {}
+      elseif post_inv then
+        self._discard_state.filtered = {}
+      elseif post_inv and " " then
+        post_inv = false
+      end
+    end,
+    discard = true,
     scoring_function = function(self, prompt, line)
-      if prompt == "" then
+      local pattern_obj = get_struct(self, prompt)
+      if pattern_obj.size == 0 then
         return 1
       end
 
-      local score = fzf.get_score(line, get_struct(self, prompt), self.state.slab)
+      local score = fzf.get_score(line, pattern_obj, self.state.slab)
       if score == 0 then
         return -1
       else

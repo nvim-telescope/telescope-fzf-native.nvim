@@ -7,14 +7,20 @@ build/libfzf.so: src/fzf.c src/fzf.h
 	mkdir -pv build
 	$(CC) $(CFLAGS) -shared src/fzf.c -o build/libfzf.so
 
-.PHONY: lint format db clean
+build/test: build/libfzf.so test/test.c
+	$(CC) $(CFLAGS) test/test.c -o build/test -I./src -L./build -lfzf -lcmocka
+
+.PHONY: lint format clangdhappy clean test
 lint:
 	luacheck lua
 
 format:
-	clang-format --style=file --dry-run -Werror src/*
+	clang-format --style=file --dry-run -Werror src/* test/*
 
-db:
+test: build/test
+	@LD_LIBRARY_PATH=${PWD}/build:${LD_LIBRARY_PATH} ./build/test
+
+clangdhappy:
 	compiledb make
 
 clean:

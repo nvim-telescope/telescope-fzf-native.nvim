@@ -8,5 +8,12 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install libcmocka-dev
       - name: Build
         run: make
+
+      - name: Tests
+        run: make test

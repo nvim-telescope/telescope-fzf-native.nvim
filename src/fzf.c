@@ -31,7 +31,7 @@ slice_impl(str, char);
 #undef slice_impl
 
 int32_t index_byte(string_t *string, char b) {
-  for (int i = 0; i < string->size; i++) {
+  for (int32_t i = 0; i < string->size; i++) {
     if (string->data[i] == b) {
       return i;
     }
@@ -62,13 +62,13 @@ int32_t trailing_whitespaces(string_t *str) {
 }
 
 void copy_runes(string_t *src, i32_t *destination) {
-  for (int i = 0; i < destination->size; i++) {
+  for (int32_t i = 0; i < destination->size; i++) {
     destination->data[i] = src->data[i];
   }
 }
 
 void copy_into_i16(i16_slice_t *src, i16_t *dest) {
-  for (int i = 0; i < src->size; i++) {
+  for (int32_t i = 0; i < src->size; i++) {
     dest->data[i] = src->data[i];
   }
 }
@@ -100,10 +100,10 @@ char *str_replace(char *orig, char *rep, char *with) {
   char *result;
   char *ins;
   char *tmp;
-  int len_rep;
-  int len_with;
-  int len_front;
-  int count;
+  int32_t len_rep;
+  int32_t len_with;
+  int32_t len_front;
+  int32_t count;
 
   if (!orig || !rep) {
     return NULL;
@@ -141,7 +141,7 @@ char *str_replace(char *orig, char *rep, char *with) {
 
 char *str_tolower(char *str, int32_t size) {
   char *lower_str = malloc((size + 1) * sizeof(char));
-  for (int i = 0; str[i]; i++) {
+  for (int32_t i = 0; str[i]; i++) {
     lower_str[i] = tolower(str[i]);
   }
   lower_str[size] = '\0';
@@ -357,10 +357,10 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                         string_t *input, string_t *pattern, bool with_pos,
                         slab_t *slab) {
   const int32_t M = pattern->size;
+  const int32_t N = input->size;
   if (M == 0) {
     return (result_t){0, 0, 0, pos_array(with_pos, M)};
   }
-  const int32_t N = input->size;
   if (slab != NULL && N * M > slab->I16.cap) {
     return fuzzy_match_v1(case_sensitive, normalize, forward, input, pattern,
                           with_pos, slab);
@@ -562,11 +562,6 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     }
   }
 
-  // TODO(conni2461): DEBUG
-  /* if DEBUG { */
-  /*   debugV2(T, pattern, F, lastIdx, H, C) */
-  /* } */
-
   position_t *pos = pos_array(with_pos, M);
   int32_t j = f0;
   if (with_pos) {
@@ -613,7 +608,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
                                   string_t *text, string_t *pattern,
                                   int32_t sidx, int32_t eidx, bool with_pos) {
-  int32_t len_pattern = pattern->size;
+  const int32_t len_pattern = pattern->size;
 
   int32_t pidx = 0;
   int32_t score = 0;
@@ -675,7 +670,7 @@ score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
                         string_t *text, string_t *pattern, bool with_pos,
                         slab_t *slab) {
-  int32_t len_pattern = pattern->size;
+  const int32_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
   }
@@ -742,7 +737,7 @@ result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
 result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
                            string_t *text, string_t *pattern, bool with_pos,
                            slab_t *slab) {
-  int32_t len_pattern = pattern->size;
+  const int32_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
   }
@@ -815,7 +810,7 @@ result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
 result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
                       string_t *text, string_t *pattern, bool with_pos,
                       slab_t *slab) {
-  int32_t len_pattern = pattern->size;
+  const int32_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
   }
@@ -883,7 +878,7 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
                      string_t *text, string_t *pattern, bool withPos,
                      slab_t *slab) {
-  int32_t len_pattern = pattern->size;
+  const int32_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (result_t){-1, -1, 0, NULL};
   }
@@ -948,8 +943,8 @@ void append_set(term_set_t *set, term_t value) {
     set->ptr = malloc(sizeof(term_t));
   } else if (set->size + 1 > set->cap) {
     // I want to keep this set as thight as possible. This function should not
-    // be called that often because it only happens inside the prompt
-    // determination, which happens only once for each prompt.
+    // be called that often because it only happens inside the pattern
+    // determination, which happens only once for each pattern.
     set->cap++;
     set->ptr = realloc(set->ptr, sizeof(term_t) * set->cap);
     assert(set->ptr != NULL);
@@ -958,18 +953,34 @@ void append_set(term_set_t *set, term_t value) {
   set->size++;
 }
 
-void append_prompt(prompt_t *prompt, term_set_t *value) {
-  if (prompt->cap == 0) {
-    prompt->cap = 1;
-    prompt->ptr = malloc(sizeof(term_set_t *));
-  } else if (prompt->size + 1 > prompt->cap) {
+void append_pattern(pattern_t *pattern, term_set_t *value) {
+  if (pattern->cap == 0) {
+    pattern->cap = 1;
+    pattern->ptr = malloc(sizeof(term_set_t *));
+  } else if (pattern->size + 1 > pattern->cap) {
     // Same reason as append_set. Need to think about this more
-    prompt->cap++;
-    prompt->ptr = realloc(prompt->ptr, sizeof(term_set_t *) * prompt->cap);
-    assert(prompt->ptr != NULL);
+    pattern->cap++;
+    pattern->ptr = realloc(pattern->ptr, sizeof(term_set_t *) * pattern->cap);
+    assert(pattern->ptr != NULL);
   }
-  prompt->ptr[prompt->size] = value;
-  prompt->size++;
+  pattern->ptr[pattern->size] = value;
+  pattern->size++;
+}
+
+algorithm_t get_alg(alg_types typ) {
+  switch (typ) {
+  case term_fuzzy:
+    return &fuzzy_match_v2;
+  case term_exact:
+    return &exact_match_naive;
+  case term_prefix:
+    return &prefix_match;
+  case term_suffix:
+    return &suffix_match;
+  case term_equal:
+    return &equal_match;
+  }
+  return &fuzzy_match_v2;
 }
 
 /* assumption (maybe i change that later)
@@ -977,7 +988,7 @@ void append_prompt(prompt_t *prompt, term_set_t *value) {
  * - always v2 alg
  * - bool extended always true (thats the whole point of this isn't it)
  */
-prompt_t *parse_terms(case_types case_mode, bool normalize, char *pattern) {
+pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
   int32_t len = strlen(pattern);
   pattern = trim_left(pattern, len, ' ', &len);
   while (has_suffix(pattern, len, " ", 1) &&
@@ -991,8 +1002,8 @@ prompt_t *parse_terms(case_types case_mode, bool normalize, char *pattern) {
   const char *delim = " ";
   char *ptr = strtok(pattern_copy, delim);
 
-  prompt_t *prompt = malloc(sizeof(prompt_t));
-  memset(prompt, 0, sizeof(*prompt));
+  pattern_t *pat_obj = malloc(sizeof(pattern_t));
+  memset(pat_obj, 0, sizeof(*pat_obj));
   term_set_t *set = malloc(sizeof(term_set_t));
   memset(set, 0, sizeof(*set));
 
@@ -1054,76 +1065,57 @@ prompt_t *parse_terms(case_types case_mode, bool normalize, char *pattern) {
 
     if (len > 0) {
       if (switch_set) {
-        append_prompt(prompt, set);
+        append_pattern(pat_obj, set);
         set = malloc(sizeof(term_set_t));
         set->cap = 0;
         set->size = 0;
       }
       append_set(set, (term_t){.typ = typ,
+                               .alg = get_alg(typ),
                                .inv = inv,
                                .ptr = og_str,
                                .text = {.data = text, .size = len},
                                .case_sensitive = case_sensitive});
       switch_set = true;
+    } else {
+      free(og_str);
     }
 
     ptr = strtok(NULL, delim);
   }
   if (set->size > 0) {
-    append_prompt(prompt, set);
+    append_pattern(pat_obj, set);
   }
   free(pattern_copy);
-  return prompt;
+  return pat_obj;
 }
 
-void free_prompt(prompt_t *prompt) {
-  for (int i = 0; i < prompt->size; i++) {
-    term_set_t *term_set = prompt->ptr[i];
-    for (int j = 0; j < term_set->size; j++) {
+void free_pattern(pattern_t *pattern) {
+  for (int32_t i = 0; i < pattern->size; i++) {
+    term_set_t *term_set = pattern->ptr[i];
+    for (int32_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
       free(term->ptr);
     }
     free(term_set->ptr);
     free(term_set);
   }
-  free(prompt->ptr);
-  free(prompt);
+  free(pattern->ptr);
+  free(pattern);
 }
 
-result_t get_result(term_t *term, string_t *input, bool with_pos,
-                    slab_t *slab) {
-  switch (term->typ) {
-  case term_fuzzy:
-    return fuzzy_match_v2(term->case_sensitive, false, true, input, &term->text,
-                          with_pos, slab);
-  case term_exact:
-    return exact_match_naive(term->case_sensitive, false, true, input,
-                             &term->text, with_pos, slab);
-  case term_prefix:
-    return prefix_match(term->case_sensitive, false, true, input, &term->text,
-                        with_pos, slab);
-  case term_suffix:
-    return suffix_match(term->case_sensitive, false, true, input, &term->text,
-                        with_pos, slab);
-  case term_equal:
-    return equal_match(term->case_sensitive, false, true, input, &term->text,
-                       with_pos, slab);
-  }
-
-  return (result_t){-1, -1, 0, NULL};
-}
-
-int32_t get_score(char *text, prompt_t *prompt, slab_t *slab) {
+int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
   string_t input = {.data = text, .size = strlen(text)};
 
   int32_t total_score = 0;
-  for (int i = 0; i < prompt->size; i++) {
-    term_set_t *term_set = prompt->ptr[i];
+  for (int32_t i = 0; i < pattern->size; i++) {
+    term_set_t *term_set = pattern->ptr[i];
     int32_t current_score = 0;
     bool matched = false;
-    for (int j = 0; j < term_set->size; j++) {
+    for (int32_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
-      result_t res = get_result(term, &input, false, slab);
+      result_t res = term->alg(term->case_sensitive, false, true, &input,
+                               &term->text, false, slab);
       if (res.start >= 0) {
         if (term->inv) {
           continue;
@@ -1147,7 +1139,7 @@ int32_t get_score(char *text, prompt_t *prompt, slab_t *slab) {
   return total_score;
 }
 
-position_t get_positions(char *text, prompt_t *prompt, slab_t *slab) {
+position_t get_positions(char *text, pattern_t *pattern, slab_t *slab) {
   string_t input = {.data = text, .size = strlen(text)};
 
   position_t all_pos;
@@ -1155,11 +1147,12 @@ position_t get_positions(char *text, prompt_t *prompt, slab_t *slab) {
   all_pos.size = 0;
   all_pos.data = malloc(sizeof(int32_t));
 
-  for (int i = 0; i < prompt->size; i++) {
-    term_set_t *term_set = prompt->ptr[i];
-    for (int j = 0; j < term_set->size; j++) {
+  for (int32_t i = 0; i < pattern->size; i++) {
+    term_set_t *term_set = pattern->ptr[i];
+    for (int32_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
-      result_t res = get_result(term, &input, true, slab);
+      result_t res = term->alg(term->case_sensitive, false, true, &input,
+                               &term->text, true, slab);
       if (res.start >= 0) {
         if (term->inv) {
           continue;

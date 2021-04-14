@@ -1,47 +1,104 @@
 # telescope-fzf-native.nvim
 
-Is a port of **[fzf][fzf]** to c. It only ports the algorithm and implements a
-`get_score` and `get_position` function, so we can use fzf sorting in telescope.
+**fzf-native** is a `c` port of **[fzf][fzf]**. It only covers the algorithm and
+implements few functions to support calculating the score.
 
 ## Installation
 
-You have to manually build the library. We do NOT ship binaries (also it takes
-like half a second).
+To get **fzf-native** working, you need to run make at the root directory. As of
+now, we do not ship binaries.
+
+### vim-plug
 
 ```viml
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'on': 'make' }
 ```
 
-You can override the file & generic sorter by default simply by adding
+### packer.nvim
 
 ```lua
-require('telescope').load_extension('fzf')
+use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
 ```
 
-somewhere after your `require('telescope').setup()` call.
-
-To configure them individually, you should do the following:
+## Telescope Setup and Configuration:
 
 ```lua
 require('telescope').setup {
   extensions = {
     fzf = {
-      override_generic_sorter = false,
-      override_file_sorter = true,
-      case_mode = "smart_case", -- or "ignore_case" or "respect_case"
-                                -- the default case_mode is "smart_case"
+      override_generic_sorter = false, -- override the generic sorter
+      override_file_sorter = true,     -- override the file sorter
+      case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
+                                       -- the default case_mode is "smart_case"
     }
   }
 }
+-- To get fzf loaded and working with telescope, you need to call
+-- load_extension, somewhere after setup function:
 require('telescope').load_extension('fzf')
 ```
 
-## TODO
+## Interface
 
-Stuff still missing that is present in fzf
+### C Interface
+
+```c
+slab_t *slab = make_slab(100 * 1024, 2048);
+/* case_mode enum: case_smart = 0, case_ignore, case_respect
+ * normalize bool: always set to false because its not implemented yet. This
+ *                 is reserved for future use
+ * pattern char* : pattern you want to match. e.g. "src | lua !.c$
+ */
+pattern_t *pattern = parse_pattern(case_smart, false, "src | lua !.c$");
+
+/* you can get the score/position for as many items as you want */
+get_score(line, pattern, slab);
+get_positions(line, pattern, slab);
+
+free_pattern(pattern);
+free_slab(slab);
+```
+
+### Lua Interface
+
+```lua
+local fzf = require('fzf')
+
+local slab = fzf.allocate_slab()
+-- pattern: string
+-- case_mode: number with 0 = smart_case, 1 = ignore_case, 2 = respect_case
+local pattern_obj = fzf.parse_pattern(pattern, case_mode)
+
+-- you can get the score/position for as many items as you want
+-- line: string
+fzf.get_score(line, pattern_obj, slab)
+fzf.get_pos(line, pattern_obj, slab)
+
+fzf.free_pattern(pattern_obj)
+fzf.free_slab(slab)
+```
+
+## Disclaimer
+
+This project is work in progress and might not be complete compared to
+**[fzf][fzf]**. But i think we are at a pretty usable state already.
+
+Another point to mention is that, this will not compare 1:1 with
+**[fzf][fzf]**, because telescope handles the sortering, this extension, is
+only handling the calculation of the score. This means that the order of items
+with the same score might be different in telescope compared to **[fzf][fzf]**.
+
+Example for this behaivor is this pattern in this repository: `src | lua`.
+All files that match this pattern have the same score which results in a
+slightly different order for telescope compared to **[fzf][fzf]**.
+
+### TODO
+
+Stuff still missing that is present in fzf.
 
 - [ ] normalize
 - [ ] case for unicode (i don't think this works currently)
+- [ ] and probably more
 
 ## Credit
 

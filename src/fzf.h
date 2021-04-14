@@ -77,8 +77,12 @@ typedef enum {
 
 typedef enum { case_smart = 0, case_ignore, case_respect } case_types;
 
+typedef result_t (*algorithm_t)(bool, bool, bool, string_t *, string_t *, bool,
+                                slab_t *);
+
 typedef struct {
   alg_types typ;
+  algorithm_t alg;
   bool inv;
   char *ptr;
   string_t text;
@@ -95,7 +99,7 @@ typedef struct {
   term_set_t **ptr;
   int32_t size;
   int32_t cap;
-} prompt_t;
+} pattern_t;
 
 /* Algorithms */
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
@@ -121,11 +125,11 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
                      slab_t *slab);
 
 /* interface */
-prompt_t *parse_terms(case_types case_mode, bool normalize, char *pattern);
-void free_prompt(prompt_t *prompt);
+pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern);
+void free_pattern(pattern_t *pattern);
 
-position_t get_positions(char *text, prompt_t *prompt, slab_t *slab);
-int32_t get_score(char *text, prompt_t *prompt, slab_t *slab);
+position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
+int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
 slab_t *make_slab(int32_t size_16, int32_t size_32);
 void free_slab(slab_t *slab);
