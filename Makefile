@@ -1,15 +1,11 @@
+CC=gcc
+CFLAGS=-Ofast -Wall -Werror -fpic
+
 all: build/libfzf.so
 
-build/fzf.o: src/fzf.c src/fzf.h
+build/libfzf.so: src/fzf.c src/fzf.h
 	mkdir -pv build
-	gcc -c -Wall -Werror -fpic src/fzf.c -o build/fzf.o
-
-build/util.o: src/util.c src/util.h
-	mkdir -pv build
-	gcc -c -Wall -Werror -fpic src/util.c -o build/util.o
-
-build/libfzf.so: build/fzf.o build/util.o
-	gcc -shared -o build/libfzf.so build/fzf.o build/util.o
+	$(CC) $(CFLAGS) -shared src/fzf.c -o build/libfzf.so
 
 .PHONY: lint format db clean
 lint:

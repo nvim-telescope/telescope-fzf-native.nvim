@@ -1,7 +1,25 @@
 #ifndef _FZF_H_
 #define _FZF_H_
 
-#include "util.h"
+#include <stdbool.h>
+#include <stdlib.h>
+
+typedef struct {
+  int16_t *data;
+  size_t size;
+  size_t cap;
+} i16_t;
+
+typedef struct {
+  int32_t *data;
+  size_t size;
+  size_t cap;
+} i32_t;
+
+typedef struct {
+  char *data;
+  size_t size;
+} string_t;
 
 typedef struct {
   int32_t *data;
@@ -49,28 +67,6 @@ typedef enum {
   char_number
 } char_types;
 
-result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        string_t *text, rune *pattern, bool with_pos,
-                        slab_t *slab);
-score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
-                                  string_t *text, rune *pattern, int32_t sidx,
-                                  int32_t eidx, bool with_pos);
-result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        string_t *text, rune *pattern, bool with_pos,
-                        slab_t *slab);
-result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
-                           string_t *text, rune *pattern, bool with_pos,
-                           slab_t *slab);
-result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
-                      string_t *text, rune *pattern, bool with_pos,
-                      slab_t *slab);
-result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
-                      string_t *text, rune *pattern, bool with_pos,
-                      slab_t *slab);
-result_t equal_match(bool case_sensitive, bool normalize, bool forward,
-                     string_t *text, rune *pattern, bool with_pos,
-                     slab_t *slab);
-
 typedef enum {
   term_fuzzy = 0,
   term_exact,
@@ -79,13 +75,14 @@ typedef enum {
   term_equal
 } alg_types;
 
+typedef enum { case_smart = 0, case_ignore, case_respect } case_types;
+
 typedef struct {
   alg_types typ;
   bool inv;
-  char *og_str;
-  char *text;
+  char *ptr;
+  string_t text;
   bool case_sensitive;
-  bool normalize;
 } term_t;
 
 typedef struct {
@@ -98,19 +95,54 @@ typedef struct {
   term_set_t **ptr;
   int32_t size;
   int32_t cap;
-} term_set_sets_t;
+} prompt_t;
 
-// TODO(conni2461): Return pattern. pattern has even more required information
-term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,
-                                   char *pattern);
-term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
-                             char *pattern);
-void free_sets(term_set_sets_t *sets);
+/* Algorithms */
+result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
+                        string_t *text, string_t *pattern, bool with_pos,
+                        slab_t *slab);
+score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
+                                  string_t *text, string_t *pattern,
+                                  int32_t sidx, int32_t eidx, bool with_pos);
+result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
+                        string_t *text, string_t *pattern, bool with_pos,
+                        slab_t *slab);
+result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
+                           string_t *text, string_t *pattern, bool with_pos,
+                           slab_t *slab);
+result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
+                      string_t *text, string_t *pattern, bool with_pos,
+                      slab_t *slab);
+result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
+                      string_t *text, string_t *pattern, bool with_pos,
+                      slab_t *slab);
+result_t equal_match(bool case_sensitive, bool normalize, bool forward,
+                     string_t *text, string_t *pattern, bool with_pos,
+                     slab_t *slab);
 
-position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab);
-int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab);
+/* interface */
+prompt_t *parse_terms(case_types case_mode, bool normalize, char *pattern);
+void free_prompt(prompt_t *prompt);
+
+position_t get_positions(char *text, prompt_t *prompt, slab_t *slab);
+int32_t get_score(char *text, prompt_t *prompt, slab_t *slab);
 
 slab_t *make_slab(int32_t size_16, int32_t size_32);
 void free_slab(slab_t *slab);
+
+/* UTILS */
+// Helpers for slice
+#define slice_def(name, type)                                                  \
+  typedef struct {                                                             \
+    type *data;                                                                \
+    int32_t size;                                                              \
+  } name##_slice_t;                                                            \
+                                                                               \
+  name##_slice_t slice_##name(type *input, int32_t from, int32_t to);          \
+  name##_slice_t slice_##name##_right(type *input, int32_t to);
+slice_def(i16, int16_t);
+slice_def(i32, int32_t);
+slice_def(str, char);
+#undef slice_def
 
 #endif // _fzf_H_

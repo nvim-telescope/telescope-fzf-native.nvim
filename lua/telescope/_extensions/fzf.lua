@@ -6,11 +6,24 @@ end
 local fzf = require('fzf')
 local sorters = require('telescope.sorters')
 
-local get_fzf_sorter = function()
+local case_enum = setmetatable({
+  ["smart_case"] = 0,
+  ["ignore_case"] = 1,
+  ["respect_case"] = 2,
+}, {
+  __index = function(_, k)
+    error(string.format("%s is not a valid case mode", k))
+  end,
+  __newindex = function() error("Don't set new things") end
+})
+
+local get_fzf_sorter = function(opts)
+  local case_mode = case_enum[opts.case_mode]
+
   local get_struct = function(self, prompt)
     local struct = self.state.prompt_cache[prompt]
     if not struct then
-      struct = fzf.parse_prompt(prompt)
+      struct = fzf.parse_prompt(prompt, case_mode)
       self.state.prompt_cache[prompt] = struct
     end
     return struct
@@ -51,15 +64,17 @@ return require('telescope').register_extension {
     local override_file = if_nil(ext_config.override_file_sorter, true)
     local override_generic = if_nil(ext_config.override_generic_sorter, true)
 
+    local opts = ext_config.case_mode and { case_mode = ext_config.case_mode } or { case_mode = "smart_case" }
+
     if override_file then
       config.file_sorter = function()
-        return get_fzf_sorter()
+        return get_fzf_sorter(opts)
       end
     end
 
     if override_generic then
       config.generic_sorter = function()
-        return get_fzf_sorter()
+        return get_fzf_sorter(opts)
       end
     end
   end,

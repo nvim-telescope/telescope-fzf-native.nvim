@@ -28,11 +28,20 @@ require('telescope').setup {
     fzf = {
       override_generic_sorter = false,
       override_file_sorter = true,
+      case_mode = "smart_case", -- or "ignore_case" or "respect_case"
+                                -- the default case_mode is "smart_case"
     }
   }
 }
 require('telescope').load_extension('fzf')
 ```
+
+## TODO
+
+Stuff still missing that is present in fzf
+
+- [ ] normalize
+- [ ] case for unicode (i don't think this works currently)
 
 ## Credit
 
