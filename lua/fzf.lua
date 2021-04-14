@@ -61,6 +61,8 @@ ffi.cdef[[
 
   slab_t *make_slab(int32_t size_16, int32_t size_32);
   void free_slab(slab_t *slab);
+
+  void free(void *ptr);
 ]]
 
 local fzf = {}
@@ -88,7 +90,7 @@ fzf.get_pos = function(input, prompt_struct, slab)
   for i = 0, pos.size - 1 do
     res[i + 1] = pos.data[i] + 1
   end
-  ffi.C.free(pos.data)
+  native.free(pos.data)
 
   return res
 end

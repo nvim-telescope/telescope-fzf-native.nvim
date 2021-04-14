@@ -37,10 +37,10 @@ bool is_space(char ch) {
   return ch == ' ' || ch == '\t' || ch == '\n';
 }
 
-int32_t leading_whitespaces(chars_t *chars) {
+int32_t leading_whitespaces(string_t *str) {
   int32_t whitespaces = 0;
-  for (int32_t i = 0; i < chars->slice.size; i++) {
-    if (!is_space(chars->slice.data[i])) {
+  for (int32_t i = 0; i < str->size; i++) {
+    if (!is_space(str->data[i])) {
       break;
     }
     whitespaces++;
@@ -48,10 +48,10 @@ int32_t leading_whitespaces(chars_t *chars) {
   return whitespaces;
 }
 
-int32_t trailing_whitespaces(chars_t *chars) {
+int32_t trailing_whitespaces(string_t *str) {
   int32_t whitespaces = 0;
-  for (int32_t i = chars->slice.size - 1; i >= 0; i--) {
-    if (!is_space(chars->slice.data[i])) {
+  for (int32_t i = str->size - 1; i >= 0; i--) {
+    if (!is_space(str->data[i])) {
       break;
     }
     whitespaces++;
@@ -59,9 +59,9 @@ int32_t trailing_whitespaces(chars_t *chars) {
   return whitespaces;
 }
 
-void copy_runes(chars_t *chars, i32_t *destination) {
+void copy_runes(string_t *str, i32_t *destination) {
   for (int i = 0; i < destination->size; i++) {
-    destination->data[i] = chars->slice.data[i];
+    destination->data[i] = str->data[i];
   }
 }
 

@@ -11,6 +11,11 @@
 // TODO(conni2461): UNICODE HEADER
 #define UNICODE_MAXASCII 0x7f
 
+#define free_alloc(obj, b)                                                     \
+  if (b) {                                                                     \
+    free(obj.data);                                                            \
+  }
+
 int32_t index_at(int32_t index, int32_t max, bool forward) {
   if (forward) {
     return index;
@@ -83,7 +88,7 @@ i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
   return alloc32(&offset, slab, size, allocated);
 }
 
-charClass char_class_of_ascii(rune ch) {
+char_class char_class_of_ascii(rune ch) {
   if (ch >= 'a' && ch <= 'z') {
     return char_lower;
   } else if (ch >= 'A' && ch <= 'Z') {
@@ -94,19 +99,19 @@ charClass char_class_of_ascii(rune ch) {
   return char_non_word;
 }
 
-charClass char_class_of_non_ascii(rune ch) {
+char_class char_class_of_non_ascii(rune ch) {
   /* TODO(conni2461): char_class_of_non_ascii line 188 - 199 */
   return 0;
 }
 
-charClass char_class_of(rune ch) {
+char_class char_class_of(rune ch) {
   if (ch <= UNICODE_MAXASCII) {
     return char_class_of_ascii(ch);
   }
   return char_class_of_non_ascii(ch);
 }
 
-int16_t bonus_for(charClass prev_class, charClass class) {
+int16_t bonus_for(char_class prev_class, char_class class) {
   if (prev_class == char_non_word && class != char_non_word) {
     return bonus_boundary;
   } else if ((prev_class == char_lower && class == char_upper) ||
@@ -118,12 +123,12 @@ int16_t bonus_for(charClass prev_class, charClass class) {
   return 0;
 }
 
-int16_t bonus_at(chars_t *input, int32_t idx) {
+int16_t bonus_at(string_t *input, int32_t idx) {
   if (idx == 0) {
     return bonus_boundary;
   }
-  return bonus_for(char_class_of(input->slice.data[idx - 1]),
-                   char_class_of(input->slice.data[idx]));
+  return bonus_for(char_class_of(input->data[idx - 1]),
+                   char_class_of(input->data[idx]));
 }
 
 rune normalie_rune(rune r) {
@@ -138,8 +143,8 @@ rune normalie_rune(rune r) {
   return r;
 }
 
-int32_t try_skip(chars_t *input, bool case_sensitive, byte b, int32_t from) {
-  str_slice_t slice = slice_str(input->slice.data, from, input->slice.size);
+int32_t try_skip(string_t *input, bool case_sensitive, byte b, int32_t from) {
+  str_slice_t slice = slice_str(input->data, from, input->size);
   string_t byte_array = {.data = slice.data, .size = slice.size};
   int32_t idx = index_byte(&byte_array, b);
   if (idx == 0) {
@@ -173,12 +178,13 @@ bool is_ascii(rune *runes, int32_t size) {
   return true;
 }
 
-int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
+int32_t ascii_fuzzy_index(string_t *input, rune *pattern, int32_t size,
                           bool case_sensitive) {
+  /* TODO(conni2461): something needs to happen with about unicode */
   // can't determine
-  if (!input->in_bytes) {
-    return 0;
-  }
+  /* if (!input->in_bytes) { */
+  /*   return 0; */
+  /* } */
 
   if (!is_ascii(pattern, size)) {
     return -1;
@@ -203,13 +209,13 @@ int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
 /* TODO(conni2461): maybe i add debugv2 maybe not */
 
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        chars_t *input, rune *pattern, bool with_pos,
+                        string_t *input, rune *pattern, bool with_pos,
                         slab_t *slab) {
   const int32_t M = rune_len(pattern);
   if (M == 0) {
     return (result_t){0, 0, 0, pos_array(with_pos, M)};
   }
-  const int32_t N = input->slice.size;
+  const int32_t N = input->size;
   if (slab != NULL && N * M > slab->I16.cap) {
     return fuzzy_match_v1(case_sensitive, normalize, forward, input, pattern,
                           with_pos, slab);
@@ -259,7 +265,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
       slice_i16_right(slice_i16(B.data, idx, B.size).data, Tsub.size);
 
   for (int32_t off = 0; off < Tsub.size; off++) {
-    charClass class;
+    char_class class;
     char c = Tsub.data[off];
     if (c <= UNICODE_MAXASCII) {
       class = char_class_of_ascii(c);
@@ -466,7 +472,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 }
 
 score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
-                                  chars_t *text, rune *pattern, int32_t sidx,
+                                  string_t *text, rune *pattern, int32_t sidx,
                                   int32_t eidx, bool with_pos) {
   int32_t len_pattern = rune_len(pattern);
 
@@ -478,10 +484,10 @@ score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
   position_t *pos = pos_array(with_pos, len_pattern);
   int32_t prev_class = char_non_word;
   if (sidx > 0) {
-    prev_class = char_class_of(text->slice.data[sidx - 1]);
+    prev_class = char_class_of(text->data[sidx - 1]);
   }
   for (int32_t idx = sidx; idx < eidx; idx++) {
-    char c = text->slice.data[idx];
+    char c = text->data[idx];
     int32_t class = char_class_of(c);
     if (!case_sensitive) {
       /* TODO(conni2461): He does some unicode stuff here, investigate */
@@ -528,7 +534,7 @@ score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
 }
 
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        chars_t *text, rune *pattern, bool with_pos,
+                        string_t *text, rune *pattern, bool with_pos,
                         slab_t *slab) {
   int32_t len_pattern = rune_len(pattern);
   if (len_pattern == 0) {
@@ -542,10 +548,10 @@ result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
   int32_t sidx = -1;
   int32_t eidx = -1;
 
-  int32_t len_runes = text->slice.size;
+  int32_t len_runes = text->size;
 
   for (int32_t idx = 0; idx < len_runes; idx++) {
-    char c = text->slice.data[index_at(idx, len_runes, forward)];
+    char c = text->data[index_at(idx, len_runes, forward)];
     if (!case_sensitive) {
       /* TODO(conni2461): He does some unicode stuff here, investigate */
       c = tolower(c);
@@ -568,7 +574,7 @@ result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
   if (sidx >= 0 && eidx >= 0) {
     pidx--;
     for (int32_t idx = eidx - 1; idx >= sidx; idx--) {
-      char c = text->slice.data[index_at(idx, len_runes, forward)];
+      char c = text->data[index_at(idx, len_runes, forward)];
       if (!case_sensitive) {
         /* TODO(conni2461): He does some unicode stuff here, investigate */
         c = tolower(c);
@@ -595,14 +601,14 @@ result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
 }
 
 result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
-                           chars_t *text, rune *pattern, bool with_pos,
+                           string_t *text, rune *pattern, bool with_pos,
                            slab_t *slab) {
   int32_t len_pattern = rune_len(pattern);
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
   }
 
-  int32_t len_runes = text->slice.size;
+  int32_t len_runes = text->size;
   if (len_runes < len_pattern) {
     return (result_t){-1, -1, 0, NULL};
   }
@@ -616,7 +622,7 @@ result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
   int16_t best_bonus = -1;
   for (int32_t idx = 0; idx < len_runes; idx++) {
     int32_t idx_ = index_at(idx, len_runes, forward);
-    char c = text->slice.data[idx_];
+    char c = text->data[idx_];
     if (!case_sensitive) {
       /* TODO(conni2461): He does some unicode stuff here, investigate */
       c = tolower(c);
@@ -668,7 +674,7 @@ result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
 }
 
 result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
-                      chars_t *text, rune *pattern, bool with_pos,
+                      string_t *text, rune *pattern, bool with_pos,
                       slab_t *slab) {
   int32_t len_pattern = rune_len(pattern);
   if (len_pattern == 0) {
@@ -678,12 +684,12 @@ result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
   if (!is_space(pattern[0])) {
     trimmed_len = leading_whitespaces(text);
   }
-  if (text->slice.size - trimmed_len < len_pattern) {
+  if (text->size - trimmed_len < len_pattern) {
     return (result_t){-1, -1, 0, NULL};
   }
   for (int32_t idx = 0; idx < len_pattern; idx++) {
     rune r = pattern[idx];
-    char c = text->slice.data[trimmed_len + idx];
+    char c = text->data[trimmed_len + idx];
     if (!case_sensitive) {
       c = tolower(c);
     }
@@ -700,9 +706,9 @@ result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
   return (result_t){trimmed_len, trimmed_len + len_pattern, score, NULL};
 }
 result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
-                      chars_t *text, rune *pattern, bool with_pos,
+                      string_t *text, rune *pattern, bool with_pos,
                       slab_t *slab) {
-  int32_t len_runes = text->slice.size;
+  int32_t len_runes = text->size;
   int32_t trimmed_len = len_runes;
   int32_t len_pattern = rune_len(pattern);
   if (len_pattern == 0 || !is_space(pattern[len_pattern] - 1)) {
@@ -718,7 +724,7 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
 
   for (int32_t idx = 0; idx < len_pattern; idx++) {
     rune r = pattern[idx];
-    char c = text->slice.data[idx + diff];
+    char c = text->data[idx + diff];
     if (!case_sensitive) {
       c = tolower(c);
     }
@@ -736,7 +742,8 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
 }
 
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
-                     chars_t *text, rune *pattern, bool withPos, slab_t *slab) {
+                     string_t *text, rune *pattern, bool withPos,
+                     slab_t *slab) {
   int32_t len_pattern = rune_len(pattern);
   if (len_pattern == 0) {
     return (result_t){-1, -1, 0, NULL};
@@ -752,14 +759,14 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
     trimmed_end_len = trailing_whitespaces(text);
   }
 
-  if ((text->slice.size - trimmed_len - trimmed_end_len) != len_pattern) {
+  if ((text->size - trimmed_len - trimmed_end_len) != len_pattern) {
     return (result_t){-1, -1, 0, NULL};
   }
 
   bool match = true;
   if (normalize) {
     // TODO(conni2461): to rune
-    char *runes = text->slice.data;
+    char *runes = text->data;
     for (int32_t idx = 0; idx < len_pattern; idx++) {
       rune pchar = pattern[idx];
       rune c = runes[trimmed_len + idx];
@@ -773,7 +780,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
     }
   } else {
     // TODO(conni2461): to rune
-    char *runes = text->slice.data;
+    char *runes = text->data;
 
     for (int32_t idx = 0; idx < len_pattern; idx++) {
       rune pchar = pattern[idx];
@@ -892,6 +899,7 @@ term_set_sets_t *parse_terms(bool case_sensitive, bool normalize,
     if (set->size > 0 && !after_bar && strcmp(text, "|") == 0) {
       switch_set = false;
       after_bar = true;
+      ptr = strtok(NULL, delim);
       continue;
     }
     after_bar = false;
@@ -972,52 +980,57 @@ void free_sets(term_set_sets_t *sets) {
 }
 
 int32_t get_match(char *text, term_set_sets_t *sets, slab_t *slab) {
-  chars_t input = {.slice = {NULL},
-                   .in_bytes = false,
-                   .trim_length_known = false,
-                   .index = 0};
-  input.slice.data = text;
-  input.slice.size = strlen(text);
+  string_t input = {.data = text, .size = strlen(text)};
 
   int32_t total_score = 0;
   for (int i = 0; i < sets->size; i++) {
     term_set_t *term_set = sets->ptr[i];
     int32_t current_score = 0;
+    bool matched = false;
     for (int j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
+      int32_t score = 0;
       if (term->inv) {
         continue;
       }
       switch (term->typ) {
       case term_fuzzy:
-        current_score += fuzzy_match_v2(term->case_sensitive, term->normalize,
-                                        true, &input, term->text, false, slab)
-                             .score;
+        score = fuzzy_match_v2(term->case_sensitive, term->normalize, true,
+                               &input, term->text, false, slab)
+                    .score;
         break;
       case term_exact:
-        current_score +=
-            exact_match_naive(term->case_sensitive, term->normalize, true,
-                              &input, term->text, false, slab)
-                .score;
+        score = exact_match_naive(term->case_sensitive, term->normalize, true,
+                                  &input, term->text, false, slab)
+                    .score;
         break;
       case term_prefix:
-        current_score += prefix_match(term->case_sensitive, term->normalize,
-                                      true, &input, term->text, false, slab)
-                             .score;
+        score = prefix_match(term->case_sensitive, term->normalize, true,
+                             &input, term->text, false, slab)
+                    .score;
         break;
       case term_suffix:
-        current_score += suffix_match(term->case_sensitive, term->normalize,
-                                      true, &input, term->text, false, slab)
-                             .score;
+        score = suffix_match(term->case_sensitive, term->normalize, true,
+                             &input, term->text, false, slab)
+                    .score;
         break;
       case term_equal:
-        current_score += equal_match(term->case_sensitive, term->normalize,
-                                     true, &input, term->text, false, slab)
-                             .score;
+        score = equal_match(term->case_sensitive, term->normalize, true, &input,
+                            term->text, false, slab)
+                    .score;
         break;
       }
+      if (score > 0) {
+        current_score += score;
+        matched = true;
+      }
     }
-    total_score += current_score;
+    if (matched) {
+      total_score += current_score;
+    } else {
+      total_score = 0;
+      break;
+    }
   }
 
   return total_score;
@@ -1033,12 +1046,7 @@ position_t *get_pos_by_result(result_t res) {
 }
 
 position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab) {
-  chars_t input = {.slice = {NULL},
-                   .in_bytes = false,
-                   .trim_length_known = false,
-                   .index = 0};
-  input.slice.data = text;
-  input.slice.size = strlen(text);
+  string_t input = {.data = text, .size = strlen(text)};
 
   position_t all_pos;
   all_pos.cap = 1;
@@ -1094,12 +1102,7 @@ position_t get_positions(char *text, term_set_sets_t *sets, slab_t *slab) {
 
 int32_t get_match_bad(bool case_sensitive, bool normalize, char *text,
                       char *pattern) {
-  chars_t input = {.slice = {NULL},
-                   .in_bytes = false,
-                   .trim_length_known = false,
-                   .index = 0};
-  input.slice.data = text;
-  input.slice.size = strlen(text);
+  string_t input = {.data = text, .size = strlen(text)};
 
   slab_t *slab = make_slab(100 * 1024, 2048);
   term_set_sets_t *set = build_pattern_fun(case_sensitive, normalize, pattern);

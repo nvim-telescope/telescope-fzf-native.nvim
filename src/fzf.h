@@ -3,8 +3,6 @@
 
 #include "util.h"
 
-int32_t index_at(int32_t index, int32_t max, bool forward);
-
 typedef struct {
   int32_t *data;
   int32_t size;
@@ -40,7 +38,7 @@ typedef enum {
   bonus_first_char_multiplier = 2,
 } score_types;
 
-typedef int32_t charClass;
+typedef int32_t char_class;
 typedef char byte; // ADDITIONAL NEED TO FIGURE OUT THESE MISSING TYPES
 
 typedef enum {
@@ -51,55 +49,27 @@ typedef enum {
   char_number
 } char_types;
 
-position_t *pos_array(bool with_pos, int32_t len);
-void append_pos(position_t *pos, int32_t value);
-void concat_pos(position_t *left, position_t *right);
-
-i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
-i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
-
-i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated);
-i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated);
-
-charClass char_class_of_ascii(rune ch);
-charClass char_class_of_non_ascii(rune ch); // TODO(conni2461)
-
-int16_t bonus_for(charClass prev_class, charClass class);
-int16_t bonus_at(chars_t *input, int32_t idx);
-
-rune normalie_rune(rune r); // TODO(conni2461)
-
-int32_t try_skip(chars_t *input, bool case_sensitive, byte b, int32_t from);
-bool is_ascii(rune *runes, int32_t size);
-int32_t ascii_fuzzy_index(chars_t *input, rune *pattern, int32_t size,
-                          bool case_sensitive);
-
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        chars_t *text, rune *pattern, bool with_pos,
+                        string_t *text, rune *pattern, bool with_pos,
                         slab_t *slab);
 score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
-                                  chars_t *text, rune *pattern, int32_t sidx,
+                                  string_t *text, rune *pattern, int32_t sidx,
                                   int32_t eidx, bool with_pos);
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        chars_t *text, rune *pattern, bool with_pos,
+                        string_t *text, rune *pattern, bool with_pos,
                         slab_t *slab);
 result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
-                           chars_t *text, rune *pattern, bool with_pos,
+                           string_t *text, rune *pattern, bool with_pos,
                            slab_t *slab);
 result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
-                      chars_t *text, rune *pattern, bool with_pos,
+                      string_t *text, rune *pattern, bool with_pos,
                       slab_t *slab);
 result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
-                      chars_t *text, rune *pattern, bool with_pos,
+                      string_t *text, rune *pattern, bool with_pos,
                       slab_t *slab);
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
-                     chars_t *text, rune *pattern, bool with_pos, slab_t *slab);
-
-// HELPERS
-#define free_alloc(obj, b)                                                     \
-  if (b) {                                                                     \
-    free(obj.data);                                                            \
-  }
+                     string_t *text, rune *pattern, bool with_pos,
+                     slab_t *slab);
 
 typedef enum {
   term_fuzzy = 0,
@@ -129,9 +99,6 @@ typedef struct {
   int32_t size;
   int32_t cap;
 } term_set_sets_t;
-
-void append_set(term_set_t *set, term_t value);
-void append_sets(term_set_sets_t *set, term_set_t *value);
 
 // TODO(conni2461): Return pattern. pattern has even more required information
 term_set_sets_t *build_pattern_fun(bool case_sensitive, bool normalize,

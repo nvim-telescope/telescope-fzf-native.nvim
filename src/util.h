@@ -24,15 +24,6 @@ typedef struct {
   size_t size;
 } string_t;
 
-typedef struct {
-  string_t slice;
-  bool in_bytes;
-  bool trim_length_known;
-  /* u_int16_t trim_length; */
-
-  int32_t index;
-} chars_t;
-
 // Helpers for slice
 #define slice_def(name, type)                                                  \
   typedef struct {                                                             \
@@ -49,12 +40,12 @@ slice_def(str, char);
 
 int32_t index_byte(string_t *string, char b);
 
-// chars_t helpers
+// string_t helpers
 int32_t rune_len(rune *arr);
 bool is_space(char ch);
-int32_t leading_whitespaces(chars_t *chars);
-int32_t trailing_whitespaces(chars_t *chars);
-void copy_runes(chars_t *chars, i32_t *destination);
+int32_t leading_whitespaces(string_t *str);
+int32_t trailing_whitespaces(string_t *str);
+void copy_runes(string_t *str, i32_t *destination);
 void copy_into_i16(i16_t *dest, i16_slice_t *src);
 
 // char* helpers
