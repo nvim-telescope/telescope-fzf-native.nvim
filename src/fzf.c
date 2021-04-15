@@ -62,8 +62,8 @@ int32_t trailing_whitespaces(string_t *str) {
 }
 
 void copy_runes(string_t *src, i32_t *destination) {
-  for (int32_t i = 0; i < destination->size; i++) {
-    destination->data[i] = src->data[i];
+  for (int32_t i = 0; i < src->size; i++) {
+    destination->data[i] = (int32_t)src->data[i];
   }
 }
 
@@ -141,7 +141,7 @@ char *str_replace(char *orig, char *rep, char *with) {
 
 char *str_tolower(char *str, int32_t size) {
   char *lower_str = malloc((size + 1) * sizeof(char));
-  for (int32_t i = 0; str[i]; i++) {
+  for (int32_t i = 0; i < size; i++) {
     lower_str[i] = tolower(str[i]);
   }
   lower_str[size] = '\0';
@@ -211,7 +211,6 @@ i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
     return (i16_t){.data = slice.data, .size = slice.size, .cap = slice.size};
   }
   int16_t *data = malloc(size * sizeof(int16_t));
-  memset(data, 0, sizeof(*data));
   *allocated = true;
   return (i16_t){.data = data, .size = size, .cap = size};
 }
@@ -228,7 +227,6 @@ i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
     return (i32_t){.data = slice.data, .size = slice.size, .cap = slice.size};
   }
   int32_t *data = malloc(size * sizeof(int32_t));
-  memset(data, 0, sizeof(*data));
   *allocated = true;
   return (i32_t){.data = data, .size = size, .cap = size};
 }
@@ -1022,6 +1020,8 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
       free(text);
       text = lower_text;
       og_str = lower_text;
+    } else {
+      free(lower_text);
     }
     if (set->size > 0 && !after_bar && strcmp(text, "|") == 0) {
       switch_set = false;

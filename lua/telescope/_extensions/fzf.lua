@@ -33,14 +33,14 @@ local get_fzf_sorter = function(opts)
 
   return sorters.Sorter:new{
     init = function(self)
-      self.state.slab = fzf.allocate_slab()
+      -- self.state.slab = fzf.allocate_slab()
       self.state.prompt_cache = {}
     end,
     destroy = function(self)
       for _, v in pairs(self.state.prompt_cache) do
         fzf.free_pattern(v)
       end
-      fzf.free_slab(self.state.slab)
+      -- fzf.free_slab(self.state.slab)
     end,
     start = function(self, prompt)
       get_struct(self, prompt)
