@@ -282,10 +282,10 @@ int16_t bonus_at(string_t *input, int32_t idx) {
 
 /* TODO(conni2461): maybe just not do this */
 char normalize_rune(char r) {
-  if (r < 0x00C0 || r > 0x2184) {
-    return r;
-  }
   // TODO(conni2461)
+  /* if (r < 0x00C0 || r > 0x2184) { */
+  /*   return r; */
+  /* } */
   /* rune n = normalized[r]; */
   /* if n > 0 { */
   /*   return n; */
