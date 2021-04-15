@@ -11,7 +11,7 @@ now, we do not ship binaries.
 ### vim-plug
 
 ```viml
-Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'on': 'make' }
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 ```
 
 ### packer.nvim
@@ -84,7 +84,7 @@ This project is work in progress and might not be complete compared to
 **[fzf][fzf]**. But i think we are at a pretty usable state already.
 
 Another point to mention is that, this will not compare 1:1 with
-**[fzf][fzf]**, because telescope handles the sortering, this extension, is
+**[fzf][fzf]**, because telescope handles the sorting, this extension is
 only handling the calculation of the score. This means that the order of items
 with the same score might be different in telescope compared to **[fzf][fzf]**.
 
