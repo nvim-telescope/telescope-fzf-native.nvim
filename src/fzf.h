@@ -8,12 +8,14 @@ typedef struct {
   int16_t *data;
   size_t size;
   size_t cap;
+  bool allocated;
 } i16_t;
 
 typedef struct {
   int32_t *data;
   size_t size;
   size_t cap;
+  bool allocated;
 } i32_t;
 
 typedef struct {

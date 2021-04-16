@@ -12,8 +12,8 @@
 #define UNICODE_MAXASCII 0x7f
 
 /* Helpers */
-#define free_alloc(obj, b)                                                     \
-  if (b) {                                                                     \
+#define free_alloc(obj)                                                        \
+  if (obj.allocated) {                                                         \
     free(obj.data);                                                            \
   }
 
@@ -203,36 +203,38 @@ void concat_pos(position_t *left, position_t *right) {
   left->size += right->size;
 }
 
-i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
+i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size) {
   if (slab != NULL && slab->I16.cap > *offset + size) {
-    *allocated = false;
     i16_slice_t slice = slice_i16(slab->I16.data, *offset, (*offset) + size);
     *offset = *offset + size;
-    return (i16_t){.data = slice.data, .size = slice.size, .cap = slice.size};
+    return (i16_t){.data = slice.data,
+                   .size = slice.size,
+                   .cap = slice.size,
+                   .allocated = false};
   }
   int16_t *data = malloc(size * sizeof(int16_t));
-  *allocated = true;
-  return (i16_t){.data = data, .size = size, .cap = size};
+  return (i16_t){.data = data, .size = size, .cap = size, .allocated = true};
 }
 
-i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
-  return alloc16(&offset, slab, size, allocated);
+i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size) {
+  return alloc16(&offset, slab, size);
 }
 
-i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size, bool *allocated) {
+i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size) {
   if (slab != NULL && slab->I32.cap > *offset + size) {
-    *allocated = false;
     i32_slice_t slice = slice_i32(slab->I32.data, *offset, (*offset) + size);
     *offset = *offset + size;
-    return (i32_t){.data = slice.data, .size = slice.size, .cap = slice.size};
+    return (i32_t){.data = slice.data,
+                   .size = slice.size,
+                   .cap = slice.size,
+                   .allocated = false};
   }
   int32_t *data = malloc(size * sizeof(int32_t));
-  *allocated = true;
-  return (i32_t){.data = data, .size = size, .cap = size};
+  return (i32_t){.data = data, .size = size, .cap = size, .allocated = true};
 }
 
-i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size, bool *allocated) {
-  return alloc32(&offset, slab, size, allocated);
+i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size) {
+  return alloc32(&offset, slab, size);
 }
 
 char_class char_class_of_ascii(char ch) {
@@ -371,19 +373,14 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 
   int32_t offset16 = 0;
   int32_t offset32 = 0;
-  bool allocated_H0 = false;
-  bool allocated_C0 = false;
-  i16_t H0 = alloc16(&offset16, slab, N, &allocated_H0);
-  i16_t C0 = alloc16(&offset16, slab, N, &allocated_C0);
+  i16_t H0 = alloc16(&offset16, slab, N);
+  i16_t C0 = alloc16(&offset16, slab, N);
   // Bonus point for each positions
-  bool allocated_B = false;
-  i16_t B = alloc16(&offset16, slab, N, &allocated_B);
+  i16_t B = alloc16(&offset16, slab, N);
   // The first occurrence of each character in the pattern
-  bool allocated_F = false;
-  i32_t F = alloc32(&offset32, slab, M, &allocated_F);
+  i32_t F = alloc32(&offset32, slab, M);
   // Rune array
-  bool allocated_T = false;
-  i32_t T = alloc32_no(offset32, slab, N, &allocated_T);
+  i32_t T = alloc32_no(offset32, slab, N);
   copy_runes(input, &T); // input.CopyRunes(T)
 
   // Phase 2. Calculate bonus for each point
@@ -457,19 +454,19 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     prevH0 = H0sub.data[off];
   }
   if (pidx != M) {
-    free_alloc(T, allocated_T);
-    free_alloc(F, allocated_F);
-    free_alloc(B, allocated_B);
-    free_alloc(C0, allocated_C0);
-    free_alloc(H0, allocated_H0);
+    free_alloc(T);
+    free_alloc(F);
+    free_alloc(B);
+    free_alloc(C0);
+    free_alloc(H0);
     return (result_t){-1, -1, 0, NULL};
   }
   if (M == 1) {
-    free_alloc(T, allocated_T);
-    free_alloc(F, allocated_F);
-    free_alloc(B, allocated_B);
-    free_alloc(C0, allocated_C0);
-    free_alloc(H0, allocated_H0);
+    free_alloc(T);
+    free_alloc(F);
+    free_alloc(B);
+    free_alloc(C0);
+    free_alloc(H0);
     result_t res = {max_score_pos, max_score_pos + 1, max_score, NULL};
     if (!with_pos) {
       return res;
@@ -482,15 +479,13 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 
   int32_t f0 = F.data[0];
   int32_t width = last_idx - f0 + 1;
-  bool allocated_H = false;
-  i16_t H = alloc16(&offset16, slab, width * M, &allocated_H);
+  i16_t H = alloc16(&offset16, slab, width * M);
   {
     i16_slice_t H0_tmp_slice = slice_i16(H0.data, f0, last_idx + 1);
     copy_into_i16(&H0_tmp_slice, &H);
   }
 
-  bool allocated_C = false;
-  i16_t C = alloc16_no(offset16, slab, width * M, &allocated_C);
+  i16_t C = alloc16_no(offset16, slab, width * M);
   {
     i16_slice_t C0_tmp_slice = slice_i16(C0.data, f0, last_idx + 1);
     copy_into_i16(&C0_tmp_slice, &C);
@@ -593,13 +588,13 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     }
   }
 
-  free_alloc(H, allocated_H);
-  free_alloc(C, allocated_C);
-  free_alloc(T, allocated_T);
-  free_alloc(F, allocated_F);
-  free_alloc(B, allocated_B);
-  free_alloc(C0, allocated_C0);
-  free_alloc(H0, allocated_H0);
+  free_alloc(H);
+  free_alloc(C);
+  free_alloc(T);
+  free_alloc(F);
+  free_alloc(B);
+  free_alloc(C0);
+  free_alloc(H0);
   return (result_t){j, max_score_pos + 1, (int32_t)max_score, pos};
 }
 
@@ -1183,11 +1178,13 @@ slab_t *make_slab(int32_t size_16, int32_t size_32) {
   memset(slab->I16.data, 0, size_16 * sizeof(*slab->I16.data));
   slab->I16.cap = size_16;
   slab->I16.size = 0;
+  slab->I16.allocated = true;
 
   slab->I32.data = malloc(size_32 * sizeof(int32_t));
   memset(slab->I32.data, 0, size_32 * sizeof(*slab->I32.data));
-  slab->I32.cap = size_16;
+  slab->I32.cap = size_32;
   slab->I32.size = 0;
+  slab->I32.allocated = true;
 
   return slab;
 }
