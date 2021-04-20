@@ -1022,6 +1022,7 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
       switch_set = false;
       after_bar = true;
       ptr = strtok(NULL, delim);
+      free(og_str);
       continue;
     }
     after_bar = false;
