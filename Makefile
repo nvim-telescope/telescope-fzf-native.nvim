@@ -1,4 +1,5 @@
 CC=gcc
+# CFLAGS=-Ofast -Wall -Werror -fpic -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion
 CFLAGS=-Ofast -Wall -Werror -fpic
 
 all: build/libfzf.so
