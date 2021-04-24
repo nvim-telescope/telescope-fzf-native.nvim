@@ -107,8 +107,8 @@ return require('telescope').register_extension {
     end
   end,
   exports = {
-    native_fzf_sorter = function()
-      return get_fzf_sorter()
+    native_fzf_sorter = function(opts)
+      return get_fzf_sorter(opts or { case_mode = "smart_case" })
     end
   }
 }
