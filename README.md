@@ -38,7 +38,11 @@ require('telescope').setup {
 require('telescope').load_extension('fzf')
 ```
 
-## Interface
+## Developer Interface
+
+This section is only addressed towards developers who plan to use the library
+(c or lua bindings).
+This section is not addressed towards users of the telescope extension.
 
 ### C Interface
 
@@ -62,7 +66,7 @@ free_slab(slab);
 ### Lua Interface
 
 ```lua
-local fzf = require('fzf')
+local fzf = require('fzf_lib')
 
 local slab = fzf.allocate_slab()
 -- pattern: string

@@ -3,7 +3,7 @@ local if_nil = function(x, y)
   return x
 end
 
-local fzf = require('fzf')
+local fzf = require('fzf_lib')
 local sorters = require('telescope.sorters')
 
 local case_enum = setmetatable({

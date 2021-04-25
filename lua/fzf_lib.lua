@@ -1,6 +1,6 @@
 local ffi = require'ffi'
 
-local dirname = string.sub(debug.getinfo(1).source, 2, string.len('/fzf.lua') * -1)
+local dirname = string.sub(debug.getinfo(1).source, 2, string.len('/fzf_lib.lua') * -1)
 local library_path = dirname .. '../build/libfzf.so'
 
 local native = ffi.load(library_path)
