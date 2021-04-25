@@ -101,6 +101,7 @@ typedef struct {
   term_set_t **ptr;
   int32_t size;
   int32_t cap;
+  bool only_inv;
 } pattern_t;
 
 /* Algorithms */

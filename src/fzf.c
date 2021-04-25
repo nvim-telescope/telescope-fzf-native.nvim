@@ -1082,6 +1082,19 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
   if (set->size > 0) {
     append_pattern(pat_obj, set);
   }
+  bool only = true;
+  for (int32_t i = 0; i < pat_obj->size; i++) {
+    term_set_t *term_set = pat_obj->ptr[i];
+    if (term_set->size > 1) {
+      only = false;
+      break;
+    }
+    if (term_set->ptr[0].inv == false) {
+      only = false;
+      break;
+    }
+  }
+  pat_obj->only_inv = only;
   free(pattern_copy);
   return pat_obj;
 }
@@ -1102,6 +1115,18 @@ void free_pattern(pattern_t *pattern) {
 
 int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
   string_t input = {.data = text, .size = strlen(text)};
+
+  if (pattern->only_inv) {
+    int final = 0;
+    for (int32_t i = 0; i < pattern->size; i++) {
+      term_set_t *term_set = pattern->ptr[i];
+      term_t *term = &term_set->ptr[0];
+      final += term->alg(term->case_sensitive, false, true, &input, &term->text,
+                         false, slab)
+                   .score;
+    }
+    return (final > 0) ? 0 : 1;
+  }
 
   int32_t total_score = 0;
   for (int32_t i = 0; i < pattern->size; i++) {

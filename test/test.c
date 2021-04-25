@@ -199,6 +199,7 @@ static void test_parse_pattern(void **state) {
   test_pat(case_smart, "lua", {
     assert_int_equal(1, pat->size);
     assert_int_equal(1, pat->cap);
+    assert_false(pat->only_inv);
 
     assert_int_equal(1, pat->ptr[0]->size);
     assert_int_equal(1, pat->ptr[0]->cap);
@@ -208,9 +209,45 @@ static void test_parse_pattern(void **state) {
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
+  test_pat(case_smart, "!Lua", {
+    assert_int_equal(1, pat->size);
+    assert_int_equal(1, pat->cap);
+    assert_true(pat->only_inv);
+
+    assert_int_equal(1, pat->ptr[0]->size);
+    assert_int_equal(1, pat->ptr[0]->cap);
+
+    assert_int_equal(term_exact, pat->ptr[0]->ptr[0].typ);
+    assert_string_equal("Lua", pat->ptr[0]->ptr[0].text.data);
+    assert_true(pat->ptr[0]->ptr[0].case_sensitive);
+    assert_true(pat->ptr[0]->ptr[0].inv);
+  });
+
+  test_pat(case_smart, "!fzf !test", {
+    assert_int_equal(2, pat->size);
+    assert_int_equal(2, pat->cap);
+    assert_true(pat->only_inv);
+
+    assert_int_equal(1, pat->ptr[0]->size);
+    assert_int_equal(1, pat->ptr[0]->cap);
+    assert_int_equal(1, pat->ptr[1]->size);
+    assert_int_equal(1, pat->ptr[1]->cap);
+
+    assert_int_equal(term_exact, pat->ptr[0]->ptr[0].typ);
+    assert_string_equal("fzf", pat->ptr[0]->ptr[0].text.data);
+    assert_false(pat->ptr[0]->ptr[0].case_sensitive);
+    assert_true(pat->ptr[0]->ptr[0].inv);
+
+    assert_int_equal(term_exact, pat->ptr[1]->ptr[0].typ);
+    assert_string_equal("test", pat->ptr[1]->ptr[0].text.data);
+    assert_false(pat->ptr[1]->ptr[0].case_sensitive);
+    assert_true(pat->ptr[1]->ptr[0].inv);
+  });
+
   test_pat(case_smart, "Lua", {
     assert_int_equal(1, pat->size);
     assert_int_equal(1, pat->cap);
+    assert_false(pat->only_inv);
 
     assert_int_equal(1, pat->ptr[0]->size);
     assert_int_equal(1, pat->ptr[0]->cap);
@@ -223,6 +260,7 @@ static void test_parse_pattern(void **state) {
   test_pat(case_smart, "'src | ^Lua", {
     assert_int_equal(1, pat->size);
     assert_int_equal(1, pat->cap);
+    assert_false(pat->only_inv);
 
     assert_int_equal(2, pat->ptr[0]->size);
     assert_int_equal(2, pat->ptr[0]->cap);
@@ -239,6 +277,7 @@ static void test_parse_pattern(void **state) {
   test_pat(case_smart, ".lua$ 'previewer !'term !asdf", {
     assert_int_equal(4, pat->size);
     assert_int_equal(4, pat->cap);
+    assert_false(pat->only_inv);
 
     assert_int_equal(1, pat->ptr[0]->size);
     assert_int_equal(1, pat->ptr[0]->cap);
@@ -269,6 +308,48 @@ static void test_parse_pattern(void **state) {
   });
 }
 
+void integration_test_wrapper(char *pattern, char **input, int *expected) {
+  slab_t *slab = make_slab(100 * 1024, 2048);
+  pattern_t *pat = parse_pattern(case_smart, false, pattern);
+  int i = 0;
+  char *one = input[i];
+  while (one != NULL) {
+    int score = get_score(one, pat, slab);
+    assert_int_equal(expected[i], score);
+    i++;
+    one = input[i];
+  }
+
+  free_pattern(pat);
+  free_slab(slab);
+}
+
+static void simple_integration(void **state) {
+  {
+    char *input[] = {"fzf", "main.c", "src/fzf", "fz/noooo", NULL};
+    int expected[] = {0, 1, 0, 1};
+    integration_test_wrapper("!fzf", input, expected);
+  }
+  {
+    char *input[] = {"src/fzf.c", "README.md", "lua/asdf", "test/test.c", NULL};
+    int expected[] = {0, 1, 1, 0};
+    integration_test_wrapper("!fzf !test", input, expected);
+  }
+  {
+    char *input[] = {"src/fzf.h",       "README.md",       "build/fzf",
+                     "lua/fzf_lib.lua", "Lua/fzf_lib.lua", NULL};
+    int expected[] = {80, 0, 0, 0, 80};
+    integration_test_wrapper("'src | ^Lua", input, expected);
+  }
+  {
+    char *input[] = {"lua/random_previewer", "README.md",
+                     "previewers/utils.lua", "previewers/buffer.lua",
+                     "previewers/term.lua",  NULL};
+    int expected[] = {0, 0, 328, 328, 0};
+    integration_test_wrapper(".lua$ 'previewer !'term", input, expected);
+  }
+}
+
 int main(void) {
   const struct CMUnitTest tests[] = {
       // Algorithms
@@ -281,6 +362,9 @@ int main(void) {
 
       // Pattern
       cmocka_unit_test(test_parse_pattern),
+
+      // Integration
+      cmocka_unit_test(simple_integration),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }
