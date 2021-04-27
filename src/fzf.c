@@ -39,9 +39,9 @@ static int32_t index_byte(string_t *string, char b) {
   return -1;
 }
 
-static int32_t leading_whitespaces(string_t *str) {
-  int32_t whitespaces = 0;
-  for (int32_t i = 0; i < str->size; i++) {
+static size_t leading_whitespaces(string_t *str) {
+  size_t whitespaces = 0;
+  for (size_t i = 0; i < str->size; i++) {
     if (!isspace(str->data[i])) {
       break;
     }
@@ -50,8 +50,8 @@ static int32_t leading_whitespaces(string_t *str) {
   return whitespaces;
 }
 
-static int32_t trailing_whitespaces(string_t *str) {
-  int32_t whitespaces = 0;
+static size_t trailing_whitespaces(string_t *str) {
+  size_t whitespaces = 0;
   for (size_t i = str->size - 1; i >= 0; i--) {
     if (!isspace(str->data[i])) {
       break;
@@ -74,11 +74,10 @@ static void copy_into_i16(i16_slice_t *src, i16_t *dest) {
 }
 
 // char* helpers
-static char *trim_left(char *str, int32_t len, char trim, int32_t *new_len) {
-  *new_len = len;
-  for (int32_t i = 0; i < len; i++) {
+static char *trim_left(char *str, size_t *len, char trim) {
+  for (size_t i = 0; i < *len; i++) {
     if (str[0] == trim) {
-      (*new_len)--;
+      (*len)--;
       str++;
     } else {
       break;
@@ -91,21 +90,15 @@ static bool has_prefix(char *str, char *prefix, size_t prefix_len) {
   return strncmp(prefix, str, prefix_len) == 0;
 }
 
-static bool has_suffix(char *str, int32_t len, char *suffix,
-                       size_t suffix_len) {
+static bool has_suffix(char *str, size_t len, char *suffix, size_t suffix_len) {
   return len >= suffix_len &&
          strncmp(slice_str(str, len - suffix_len, len).data, suffix,
                  suffix_len) == 0;
 }
 
 static char *str_replace(char *orig, char *rep, char *with) {
-  char *result;
-  char *ins;
-  char *tmp;
-  int32_t len_rep;
-  int32_t len_with;
-  int32_t len_front;
-  int32_t count;
+  char *result, *ins, *tmp;
+  size_t len_rep, len_with, len_front, count;
 
   if (!orig || !rep) {
     return NULL;
@@ -124,7 +117,8 @@ static char *str_replace(char *orig, char *rep, char *with) {
     ins = tmp + len_rep;
   }
 
-  tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+  tmp = result =
+      (char *)malloc(strlen(orig) + (len_with - len_rep) * count + 1);
 
   if (!result) {
     return NULL;
@@ -141,8 +135,8 @@ static char *str_replace(char *orig, char *rep, char *with) {
   return result;
 }
 
-static char *str_tolower(char *str, int32_t size) {
-  char *lower_str = malloc((size + 1) * sizeof(char));
+static char *str_tolower(char *str, size_t size) {
+  char *lower_str = (char *)malloc((size + 1) * sizeof(char));
   for (int32_t i = 0; i < size; i++) {
     lower_str[i] = tolower(str[i]);
   }
@@ -165,18 +159,18 @@ static int32_t index_at(int32_t index, int32_t max, bool forward) {
   return max - index - 1;
 }
 
-static position_t *pos_array(bool with_pos, int32_t len) {
+static position_t *pos_array(bool with_pos, size_t len) {
   if (with_pos) {
-    position_t *pos = malloc(sizeof(position_t));
+    position_t *pos = (position_t *)malloc(sizeof(position_t));
     pos->size = 0;
     pos->cap = len;
-    pos->data = malloc(len * sizeof(int32_t));
+    pos->data = (int32_t *)malloc(len * sizeof(int32_t));
     return pos;
   }
   return NULL;
 }
 
-static void resize_pos(position_t *pos, int32_t add_len) {
+static void resize_pos(position_t *pos, size_t add_len) {
   if (pos->size + add_len > pos->cap) {
     pos->cap += add_len;
     pos->data = realloc(pos->data, sizeof(int32_t) * pos->cap);
@@ -195,7 +189,7 @@ static void concat_pos(position_t *left, position_t *right) {
   left->size += right->size;
 }
 
-static i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size) {
+static i16_t alloc16(int32_t *offset, slab_t *slab, size_t size) {
   if (slab != NULL && slab->I16.cap > *offset + size) {
     i16_slice_t slice = slice_i16(slab->I16.data, *offset, (*offset) + size);
     *offset = *offset + size;
@@ -204,15 +198,15 @@ static i16_t alloc16(int32_t *offset, slab_t *slab, int32_t size) {
                    .cap = slice.size,
                    .allocated = false};
   }
-  int16_t *data = malloc(size * sizeof(int16_t));
+  int16_t *data = (int16_t *)malloc(size * sizeof(int16_t));
   return (i16_t){.data = data, .size = size, .cap = size, .allocated = true};
 }
 
-static i16_t alloc16_no(int32_t offset, slab_t *slab, int32_t size) {
+static i16_t alloc16_no(int32_t offset, slab_t *slab, size_t size) {
   return alloc16(&offset, slab, size);
 }
 
-static i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size) {
+static i32_t alloc32(int32_t *offset, slab_t *slab, size_t size) {
   if (slab != NULL && slab->I32.cap > *offset + size) {
     i32_slice_t slice = slice_i32(slab->I32.data, *offset, (*offset) + size);
     *offset = *offset + size;
@@ -221,11 +215,11 @@ static i32_t alloc32(int32_t *offset, slab_t *slab, int32_t size) {
                    .cap = slice.size,
                    .allocated = false};
   }
-  int32_t *data = malloc(size * sizeof(int32_t));
+  int32_t *data = (int32_t *)malloc(size * sizeof(int32_t));
   return (i32_t){.data = data, .size = size, .cap = size, .allocated = true};
 }
 
-static i32_t alloc32_no(int32_t offset, slab_t *slab, int32_t size) {
+static i32_t alloc32_no(int32_t offset, slab_t *slab, size_t size) {
   return alloc32(&offset, slab, size);
 }
 
@@ -264,7 +258,7 @@ static int16_t bonus_for(char_class prev_class, char_class class) {
   return 0;
 }
 
-static int16_t bonus_at(string_t *input, int32_t idx) {
+static int16_t bonus_at(string_t *input, size_t idx) {
   if (idx == 0) {
     return bonus_boundary;
   }
@@ -286,7 +280,7 @@ static char normalize_rune(char r) {
 }
 
 static int32_t try_skip(string_t *input, bool case_sensitive, byte b,
-                        int32_t from) {
+                        size_t from) {
   str_slice_t slice = slice_str(input->data, from, input->size);
   string_t byte_array = {.data = slice.data, .size = slice.size};
   int32_t idx = index_byte(&byte_array, b);
@@ -312,7 +306,7 @@ static int32_t try_skip(string_t *input, bool case_sensitive, byte b,
   return from + idx;
 }
 
-static bool is_ascii(char *runes, int32_t size) {
+static bool is_ascii(char *runes, size_t size) {
   // TODO(conni2461): future use
   /* for (int32_t i = 0; i < size; i++) { */
   /*   if (runes[i] >= 256) { */
@@ -322,7 +316,7 @@ static bool is_ascii(char *runes, int32_t size) {
   return true;
 }
 
-static int32_t ascii_fuzzy_index(string_t *input, char *pattern, int32_t size,
+static int32_t ascii_fuzzy_index(string_t *input, char *pattern, size_t size,
                                  bool case_sensitive) {
   if (!is_ascii(pattern, size)) {
     return -1;
@@ -828,21 +822,21 @@ result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
 result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
                       string_t *text, string_t *pattern, bool with_pos,
                       slab_t *slab) {
-  int32_t len_runes = text->size;
-  int32_t trimmed_len = len_runes;
-  int32_t len_pattern = pattern->size;
+  size_t len_runes = text->size;
+  size_t trimmed_len = len_runes;
+  size_t len_pattern = pattern->size;
   if (len_pattern == 0 || !isspace(pattern->data[len_pattern] - 1)) {
     trimmed_len -= trailing_whitespaces(text);
   }
   if (len_pattern == 0) {
     return (result_t){trimmed_len, trimmed_len, 0, NULL};
   }
-  int32_t diff = trimmed_len - len_pattern;
+  size_t diff = trimmed_len - len_pattern;
   if (diff < 0) {
     return (result_t){-1, -1, 0, NULL};
   }
 
-  for (int32_t idx = 0; idx < len_pattern; idx++) {
+  for (size_t idx = 0; idx < len_pattern; idx++) {
     char r = pattern->data[idx];
     char c = text->data[idx + diff];
     if (!case_sensitive) {
@@ -855,29 +849,24 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
       return (result_t){-1, -1, 0, NULL};
     }
   }
+  int32_t start = ((int32_t)trimmed_len - (int32_t)len_pattern);
+  int32_t end = (int32_t)trimmed_len;
   int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
-                                  trimmed_len - len_pattern, trimmed_len, false)
+                                  start, end, false)
                       .score;
-  return (result_t){trimmed_len - len_pattern, trimmed_len, score, NULL};
+  return (result_t){start, end, score, NULL};
 }
 
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
                      string_t *text, string_t *pattern, bool withPos,
                      slab_t *slab) {
-  const int32_t len_pattern = pattern->size;
+  const size_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (result_t){-1, -1, 0, NULL};
   }
 
-  int32_t trimmed_len = 0;
-  if (!isspace(pattern->data[0])) {
-    trimmed_len = leading_whitespaces(text);
-  }
-
-  int32_t trimmed_end_len = 0;
-  if (!isspace(pattern->data[len_pattern - 1])) {
-    trimmed_end_len = trailing_whitespaces(text);
-  }
+  size_t trimmed_len = leading_whitespaces(text);
+  size_t trimmed_end_len = trailing_whitespaces(text);
 
   if ((text->size - trimmed_len - trimmed_end_len) != len_pattern) {
     return (result_t){-1, -1, 0, NULL};
@@ -887,7 +876,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
   if (normalize) {
     // TODO(conni2461): to rune
     char *runes = text->data;
-    for (int32_t idx = 0; idx < len_pattern; idx++) {
+    for (size_t idx = 0; idx < len_pattern; idx++) {
       char pchar = pattern->data[idx];
       char c = runes[trimmed_len + idx];
       if (!case_sensitive) {
@@ -902,7 +891,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
     // TODO(conni2461): to rune
     char *runes = text->data;
 
-    for (int32_t idx = 0; idx < len_pattern; idx++) {
+    for (size_t idx = 0; idx < len_pattern; idx++) {
       char pchar = pattern->data[idx];
       char c = runes[trimmed_len + idx];
       if (!case_sensitive) {
@@ -926,7 +915,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
 static void append_set(term_set_t *set, term_t value) {
   if (set->cap == 0) {
     set->cap = 1;
-    set->ptr = malloc(sizeof(term_t));
+    set->ptr = (term_t *)malloc(sizeof(term_t));
   } else if (set->size + 1 > set->cap) {
     // I want to keep this set as thight as possible. This function should not
     // be called that often because it only happens inside the pattern
@@ -942,7 +931,7 @@ static void append_set(term_set_t *set, term_t value) {
 static void append_pattern(pattern_t *pattern, term_set_t *value) {
   if (pattern->cap == 0) {
     pattern->cap = 1;
-    pattern->ptr = malloc(sizeof(term_set_t *));
+    pattern->ptr = (term_set_t **)malloc(sizeof(term_set_t *));
   } else if (pattern->size + 1 > pattern->cap) {
     // Same reason as append_set. Need to think about this more
     pattern->cap++;
@@ -975,12 +964,12 @@ static algorithm_t get_alg(alg_types typ) {
  * - bool extended always true (thats the whole point of this isn't it)
  */
 pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
-  int32_t len = strlen(pattern);
-  pattern = trim_left(pattern, len, ' ', &len);
-  while (has_suffix(pattern, len, " ", 1) &&
-         !has_suffix(pattern, len, "\\ ", 2)) {
-    pattern[len - 1] = 0;
-    len--;
+  size_t pat_len = strlen(pattern);
+  pattern = trim_left(pattern, &pat_len, ' ');
+  while (has_suffix(pattern, pat_len, " ", 1) &&
+         !has_suffix(pattern, pat_len, "\\ ", 2)) {
+    pattern[pat_len - 1] = 0;
+    pat_len--;
   }
 
   char *pattern_copy = str_replace(pattern, "\\ ", "\t");
@@ -988,9 +977,9 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
   const char *delim = " ";
   char *ptr = strtok(pattern_copy, delim);
 
-  pattern_t *pat_obj = malloc(sizeof(pattern_t));
+  pattern_t *pat_obj = (pattern_t *)malloc(sizeof(pattern_t));
   memset(pat_obj, 0, sizeof(*pat_obj));
-  term_set_t *set = malloc(sizeof(term_set_t));
+  term_set_t *set = (term_set_t *)malloc(sizeof(term_set_t));
   memset(set, 0, sizeof(*set));
 
   bool switch_set = false;
@@ -999,7 +988,7 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
     alg_types typ = term_fuzzy;
     bool inv = false;
     char *text = str_replace(ptr, "\t", " ");
-    int32_t len = strlen(text);
+    size_t len = strlen(text);
     char *og_str = text;
     char *lower_text = str_tolower(text, len);
     bool case_sensitive = case_mode == case_respect ||
@@ -1055,7 +1044,7 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
     if (len > 0) {
       if (switch_set) {
         append_pattern(pat_obj, set);
-        set = malloc(sizeof(term_set_t));
+        set = (term_set_t *)malloc(sizeof(term_set_t));
         set->cap = 0;
         set->size = 0;
       }
@@ -1093,9 +1082,9 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
 }
 
 void free_pattern(pattern_t *pattern) {
-  for (int32_t i = 0; i < pattern->size; i++) {
+  for (size_t i = 0; i < pattern->size; i++) {
     term_set_t *term_set = pattern->ptr[i];
-    for (int32_t j = 0; j < term_set->size; j++) {
+    for (size_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
       free(term->ptr);
     }
@@ -1111,7 +1100,7 @@ int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
 
   if (pattern->only_inv) {
     int final = 0;
-    for (int32_t i = 0; i < pattern->size; i++) {
+    for (size_t i = 0; i < pattern->size; i++) {
       term_set_t *term_set = pattern->ptr[i];
       term_t *term = &term_set->ptr[0];
       final += term->alg(term->case_sensitive, false, true, &input, &term->text,
@@ -1122,11 +1111,11 @@ int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
   }
 
   int32_t total_score = 0;
-  for (int32_t i = 0; i < pattern->size; i++) {
+  for (size_t i = 0; i < pattern->size; i++) {
     term_set_t *term_set = pattern->ptr[i];
     int32_t current_score = 0;
     bool matched = false;
-    for (int32_t j = 0; j < term_set->size; j++) {
+    for (size_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
       result_t res = term->alg(term->case_sensitive, false, true, &input,
                                &term->text, false, slab);
@@ -1159,11 +1148,11 @@ position_t get_positions(char *text, pattern_t *pattern, slab_t *slab) {
   position_t all_pos;
   all_pos.cap = 1;
   all_pos.size = 0;
-  all_pos.data = malloc(sizeof(int32_t));
+  all_pos.data = (int32_t *)malloc(sizeof(int32_t));
 
-  for (int32_t i = 0; i < pattern->size; i++) {
+  for (size_t i = 0; i < pattern->size; i++) {
     term_set_t *term_set = pattern->ptr[i];
-    for (int32_t j = 0; j < term_set->size; j++) {
+    for (size_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
       result_t res = term->alg(term->case_sensitive, false, true, &input,
                                &term->text, true, slab);
@@ -1177,8 +1166,8 @@ position_t get_positions(char *text, pattern_t *pattern, slab_t *slab) {
           free(res.pos);
         } else {
           resize_pos(&all_pos, res.end - res.start);
-          for (int i = res.start; i < res.end; i++) {
-            all_pos.data[all_pos.size] = i;
+          for (int32_t k = res.start; k < res.end; k++) {
+            all_pos.data[all_pos.size] = k;
             all_pos.size++;
           }
         }
@@ -1189,17 +1178,17 @@ position_t get_positions(char *text, pattern_t *pattern, slab_t *slab) {
   return all_pos;
 }
 
-slab_t *make_slab(int32_t size_16, int32_t size_32) {
-  slab_t *slab = malloc(sizeof(slab_t));
+slab_t *make_slab(size_t size_16, size_t size_32) {
+  slab_t *slab = (slab_t *)malloc(sizeof(slab_t));
   memset(slab, 0, sizeof(*slab));
 
-  slab->I16.data = malloc(size_16 * sizeof(int16_t));
+  slab->I16.data = (int16_t *)malloc(size_16 * sizeof(int16_t));
   memset(slab->I16.data, 0, size_16 * sizeof(*slab->I16.data));
   slab->I16.cap = size_16;
   slab->I16.size = 0;
   slab->I16.allocated = true;
 
-  slab->I32.data = malloc(size_32 * sizeof(int32_t));
+  slab->I32.data = (int32_t *)malloc(size_32 * sizeof(int32_t));
   memset(slab->I32.data, 0, size_32 * sizeof(*slab->I32.data));
   slab->I32.cap = size_32;
   slab->I32.size = 0;

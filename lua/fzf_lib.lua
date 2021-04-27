@@ -16,14 +16,14 @@ ffi.cdef[[
   typedef struct {} term_set_t;
   typedef struct {
     term_set_t **ptr;
-    int32_t size;
-    int32_t cap;
+    size_t size;
+    size_t cap;
   } pattern_t;
 
   typedef struct {
     int32_t *data;
-    int32_t size;
-    int32_t cap;
+    size_t size;
+    size_t cap;
   } position_t;
 
   position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
@@ -32,7 +32,7 @@ ffi.cdef[[
   pattern_t *parse_pattern(int32_t case_mode, bool normalize, char *pattern);
   void free_pattern(pattern_t *pattern);
 
-  slab_t *make_slab(int32_t size_16, int32_t size_32);
+  slab_t *make_slab(size_t size_16, size_t size_32);
   void free_slab(slab_t *slab);
 
   void free(void *ptr);
@@ -51,7 +51,7 @@ fzf.get_pos = function(input, pattern_struct, slab)
   ffi.copy(text, input)
   local pos = native.get_positions(text, pattern_struct, slab)
   local res = {}
-  for i = 0, pos.size - 1 do
+  for i = 0, tonumber(pos.size) - 1 do
     res[i + 1] = pos.data[i] + 1
   end
   native.free(pos.data)

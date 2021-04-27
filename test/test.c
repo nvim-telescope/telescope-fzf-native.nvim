@@ -308,7 +308,8 @@ static void test_parse_pattern(void **state) {
   });
 }
 
-void integration_test_wrapper(char *pattern, char **input, int *expected) {
+static void integration_test_wrapper(char *pattern, char **input,
+                                     int *expected) {
   slab_t *slab = make_slab(100 * 1024, 2048);
   pattern_t *pat = parse_pattern(case_smart, false, pattern);
   int i = 0;

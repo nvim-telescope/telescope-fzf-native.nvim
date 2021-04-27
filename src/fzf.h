@@ -25,8 +25,8 @@ typedef struct {
 
 typedef struct {
   int32_t *data;
-  int32_t size;
-  int32_t cap;
+  size_t size;
+  size_t cap;
 } position_t;
 
 typedef struct {
@@ -93,14 +93,14 @@ typedef struct {
 
 typedef struct {
   term_t *ptr;
-  int32_t size;
-  int32_t cap;
+  size_t size;
+  size_t cap;
 } term_set_t;
 
 typedef struct {
   term_set_t **ptr;
-  int32_t size;
-  int32_t cap;
+  size_t size;
+  size_t cap;
   bool only_inv;
 } pattern_t;
 
@@ -134,7 +134,7 @@ void free_pattern(pattern_t *pattern);
 position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
 int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
-slab_t *make_slab(int32_t size_16, int32_t size_32);
+slab_t *make_slab(size_t size_16, size_t size_32);
 void free_slab(slab_t *slab);
 
 /* UTILS */
@@ -142,7 +142,7 @@ void free_slab(slab_t *slab);
 #define slice_def(name, type)                                                  \
   typedef struct {                                                             \
     type *data;                                                                \
-    int32_t size;                                                              \
+    size_t size;                                                               \
   } name##_slice_t;                                                            \
                                                                                \
   name##_slice_t slice_##name(type *input, int32_t from, int32_t to);          \
