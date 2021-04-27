@@ -24,6 +24,8 @@ local get_fzf_sorter = function(opts)
   local pattern_obj = nil
 
   local get_struct = function(self, prompt)
+    if pattern_obj then return pattern_obj end
+
     local struct = self.state.prompt_cache[prompt]
     if not struct then
       struct = fzf.parse_pattern(prompt, case_mode)
@@ -73,18 +75,19 @@ local get_fzf_sorter = function(opts)
       pattern_obj = nil
     end,
     discard = true,
-    scoring_function = function(self, _, line)
-      if pattern_obj.size == 0 then return 1 end
+    scoring_function = function(self, prompt, line)
+      local obj = get_struct(self, prompt)
+      if obj.size == 0 then return 1 end
 
-      local score = fzf.get_score(line, pattern_obj, self.state.slab)
+      local score = fzf.get_score(line, obj, self.state.slab)
       if score == 0 then
         return -1
       else
         return 1 / score
       end
     end,
-    highlighter = function(self, _, display)
-      return fzf.get_pos(display, pattern_obj, self.state.slab)
+    highlighter = function(self, prompt, display)
+      return fzf.get_pos(display, get_struct(self, prompt), self.state.slab)
     end,
   }
 end
