@@ -24,7 +24,7 @@ typedef struct {
 } string_t;
 
 typedef struct {
-  int32_t *data;
+  size_t *data;
   size_t size;
   size_t cap;
 } position_t;
@@ -46,17 +46,6 @@ typedef struct {
   i16_t I16;
   i32_t I32;
 } slab_t;
-
-typedef enum {
-  score_match = 16,
-  score_gap_start = -3,
-  score_gap_extention = -1,
-  bonus_boundary = score_match / 2,
-  bonus_non_word = score_match / 2,
-  bonus_camel_123 = bonus_boundary + score_gap_extention,
-  bonus_consecutive = -(score_gap_start + score_gap_extention),
-  bonus_first_char_multiplier = 2,
-} score_types;
 
 typedef int32_t char_class;
 typedef char byte; // ADDITIONAL NEED TO FIGURE OUT THESE MISSING TYPES
@@ -108,9 +97,6 @@ typedef struct {
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                         string_t *text, string_t *pattern, bool with_pos,
                         slab_t *slab);
-score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
-                                  string_t *text, string_t *pattern,
-                                  int32_t sidx, int32_t eidx, bool with_pos);
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
                         string_t *text, string_t *pattern, bool with_pos,
                         slab_t *slab);
@@ -145,8 +131,8 @@ void free_slab(slab_t *slab);
     size_t size;                                                               \
   } name##_slice_t;                                                            \
                                                                                \
-  name##_slice_t slice_##name(type *input, int32_t from, int32_t to);          \
-  name##_slice_t slice_##name##_right(type *input, int32_t to);
+  name##_slice_t slice_##name(type *input, size_t from, size_t to);            \
+  name##_slice_t slice_##name##_right(type *input, size_t to);
 slice_def(i16, int16_t);
 slice_def(i32, int32_t);
 slice_def(str, char);
