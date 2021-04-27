@@ -21,6 +21,7 @@ local get_fzf_sorter = function(opts)
   local case_mode = case_enum[opts.case_mode]
   local post_or = false
   local post_inv = false
+  local post_escape = false
   local pattern_obj = nil
 
   local get_struct = function(self, prompt)
@@ -60,6 +61,14 @@ local get_fzf_sorter = function(opts)
         post_or = false
       else
         post_or = false
+      end
+
+      if last == '\\' and not post_escape then
+        self._discard_state.filtered = {}
+        post_escape = true
+      else
+        self._discard_state.filtered = {}
+        post_escape = false
       end
 
       if last == '!' and not post_inv then

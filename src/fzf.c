@@ -819,13 +819,14 @@ result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
                       .score;
   return (result_t){trimmed_len, trimmed_len + len_pattern, score, NULL};
 }
+
 result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
                       string_t *text, string_t *pattern, bool with_pos,
                       slab_t *slab) {
   size_t len_runes = text->size;
   size_t trimmed_len = len_runes;
-  size_t len_pattern = pattern->size;
-  if (len_pattern == 0 || !isspace(pattern->data[len_pattern] - 1)) {
+  const size_t len_pattern = pattern->size;
+  if (len_pattern == 0 || !isspace(pattern->data[len_pattern - 1])) {
     trimmed_len -= trailing_whitespaces(text);
   }
   if (len_pattern == 0) {
@@ -840,7 +841,7 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
     char r = pattern->data[idx];
     char c = text->data[idx + diff];
     if (!case_sensitive) {
-      c = tolower(c);
+      c = (char)tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
@@ -880,7 +881,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
       char pchar = pattern->data[idx];
       char c = runes[trimmed_len + idx];
       if (!case_sensitive) {
-        c = tolower(c);
+        c = (char)tolower(c);
       }
       if (normalize_rune(c) != normalize_rune(pchar)) {
         match = false;
@@ -895,7 +896,7 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
       char pchar = pattern->data[idx];
       char c = runes[trimmed_len + idx];
       if (!case_sensitive) {
-        c = tolower(c);
+        c = (char)tolower(c);
       }
       if (c != pchar) {
         match = false;
@@ -904,8 +905,9 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
     }
   }
   if (match) {
-    return (result_t){trimmed_len, trimmed_len + len_pattern,
-                      (score_match + bonus_boundary) * len_pattern +
+    return (result_t){(int32_t)trimmed_len,
+                      ((int32_t)trimmed_len + (int32_t)len_pattern),
+                      (score_match + bonus_boundary) * (int32_t)len_pattern +
                           (bonus_first_char_multiplier - 1) * bonus_boundary,
                       NULL};
   }
@@ -1165,10 +1167,13 @@ position_t get_positions(char *text, pattern_t *pattern, slab_t *slab) {
           free(res.pos->data);
           free(res.pos);
         } else {
-          resize_pos(&all_pos, res.end - res.start);
-          for (int32_t k = res.start; k < res.end; k++) {
-            all_pos.data[all_pos.size] = k;
-            all_pos.size++;
+          int32_t diff = (res.end - res.start);
+          if (diff > 0) {
+            resize_pos(&all_pos, (size_t)diff);
+            for (int32_t k = res.start; k < res.end; k++) {
+              all_pos.data[all_pos.size] = k;
+              all_pos.size++;
+            }
           }
         }
       }

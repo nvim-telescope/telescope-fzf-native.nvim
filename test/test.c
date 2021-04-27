@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define test_fun_type void __attribute__((unused))
+
 #define call_alg(alg, case, txt, pat, assert_block)                            \
   {                                                                            \
     string_t text = {.data = txt, .size = strlen(txt)};                        \
@@ -34,7 +36,7 @@
 
 // TODO(conni2461): Implement normalize and test it here
 
-static void test_fuzzy_match_v2(void **state) {
+static test_fun_type test_fuzzy_match_v2(void **state) {
   call_alg(fuzzy_match_v2, true, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
@@ -71,7 +73,7 @@ static void test_fuzzy_match_v2(void **state) {
   });
 }
 
-static void test_fuzzy_match_v1(void **state) {
+static test_fun_type test_fuzzy_match_v1(void **state) {
   call_alg(fuzzy_match_v1, true, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
@@ -108,7 +110,7 @@ static void test_fuzzy_match_v1(void **state) {
   });
 }
 
-static void test_prefix_match(void **state) {
+static test_fun_type test_prefix_match(void **state) {
   call_alg(prefix_match, true, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
@@ -128,7 +130,7 @@ static void test_prefix_match(void **state) {
   });
 }
 
-static void test_exact_match(void **state) {
+static test_fun_type test_exact_match(void **state) {
   call_alg(exact_match_naive, true, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
@@ -148,7 +150,7 @@ static void test_exact_match(void **state) {
   });
 }
 
-static void test_suffix_match(void **state) {
+static test_fun_type test_suffix_match(void **state) {
   call_alg(suffix_match, true, "So Danco Samba", "So", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
@@ -168,7 +170,7 @@ static void test_suffix_match(void **state) {
   });
 }
 
-static void test_equal_match(void **state) {
+static test_fun_type test_equal_match(void **state) {
   call_alg(equal_match, true, "So Danco Samba", "So", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
@@ -195,7 +197,7 @@ static void test_equal_match(void **state) {
     free_pattern(pat);                                                         \
   }
 
-static void test_parse_pattern(void **state) {
+static test_fun_type test_parse_pattern(void **state) {
   test_pat(case_smart, "lua", {
     assert_int_equal(1, pat->size);
     assert_int_equal(1, pat->cap);
@@ -206,6 +208,19 @@ static void test_parse_pattern(void **state) {
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
     assert_string_equal("lua", pat->ptr[0]->ptr[0].text.data);
+    assert_false(pat->ptr[0]->ptr[0].case_sensitive);
+  });
+
+  test_pat(case_smart, "file\\ with\\ space", {
+    assert_int_equal(1, pat->size);
+    assert_int_equal(1, pat->cap);
+    assert_false(pat->only_inv);
+
+    assert_int_equal(1, pat->ptr[0]->size);
+    assert_int_equal(1, pat->ptr[0]->cap);
+
+    assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
+    assert_string_equal("file\ with\ space", pat->ptr[0]->ptr[0].text.data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
@@ -325,7 +340,7 @@ static void integration_test_wrapper(char *pattern, char **input,
   free_slab(slab);
 }
 
-static void simple_integration(void **state) {
+static test_fun_type simple_integration(void **state) {
   {
     char *input[] = {"fzf", "main.c", "src/fzf", "fz/noooo", NULL};
     int expected[] = {0, 1, 0, 1};
