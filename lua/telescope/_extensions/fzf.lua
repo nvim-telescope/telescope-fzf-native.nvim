@@ -21,6 +21,7 @@ local get_fzf_sorter = function(opts)
   local case_mode = case_enum[opts.case_mode]
   local post_or = false
   local post_inv = false
+  local pattern_obj = nil
 
   local get_struct = function(self, prompt)
     local struct = self.state.prompt_cache[prompt]
@@ -41,9 +42,10 @@ local get_fzf_sorter = function(opts)
         fzf.free_pattern(v)
       end
       fzf.free_slab(self.state.slab)
+      pattern_obj = nil
     end,
     start = function(self, prompt)
-      get_struct(self, prompt)
+      pattern_obj = get_struct(self, prompt)
       local last = prompt:sub(-1, -1)
 
       if last == '|' then
@@ -67,12 +69,12 @@ local get_fzf_sorter = function(opts)
         post_inv = false
       end
     end,
+    finish = function()
+      pattern_obj = nil
+    end,
     discard = true,
-    scoring_function = function(self, prompt, line)
-      local pattern_obj = get_struct(self, prompt)
-      if pattern_obj.size == 0 then
-        return 1
-      end
+    scoring_function = function(self, _, line)
+      if pattern_obj.size == 0 then return 1 end
 
       local score = fzf.get_score(line, pattern_obj, self.state.slab)
       if score == 0 then
@@ -81,8 +83,8 @@ local get_fzf_sorter = function(opts)
         return 1 / score
       end
     end,
-    highlighter = function(self, prompt, display)
-      return fzf.get_pos(display, get_struct(self, prompt), self.state.slab)
+    highlighter = function(self, _, display)
+      return fzf.get_pos(display, pattern_obj, self.state.slab)
     end,
   }
 end
