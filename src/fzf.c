@@ -31,15 +31,16 @@ slice_impl(str, char);
 #undef slice_impl
 
 // Its just better if this are shorts
-static const int16_t score_match = 16;
-static const int16_t score_gap_start = -3;
-static const int16_t score_gap_extention = -1;
-static const int16_t bonus_boundary = score_match / 2;
-static const int16_t bonus_non_word = score_match / 2;
-static const int16_t bonus_camel_123 = bonus_boundary + score_gap_extention;
-static const int16_t bonus_consecutive =
-    -(score_gap_start + score_gap_extention);
-static const int16_t bonus_first_char_multiplier = 2;
+typedef enum {
+  score_match = 16,
+  score_gap_start = -3,
+  score_gap_extention = -1,
+  bonus_boundary = score_match / 2,
+  bonus_non_word = score_match / 2,
+  bonus_camel_123 = bonus_boundary + score_gap_extention,
+  bonus_consecutive = -(score_gap_start + score_gap_extention),
+  bonus_first_char_multiplier = 2,
+} score_t;
 
 static int32_t index_byte(string_t *string, char b) {
   for (size_t i = 0; i < string->size; i++) {
@@ -73,13 +74,13 @@ static size_t trailing_whitespaces(string_t *str) {
 }
 
 static void copy_runes(string_t *src, i32_t *destination) {
-  for (int32_t i = 0; i < src->size; i++) {
+  for (size_t i = 0; i < src->size; i++) {
     destination->data[i] = (int32_t)src->data[i];
   }
 }
 
 static void copy_into_i16(i16_slice_t *src, i16_t *dest) {
-  for (int32_t i = 0; i < src->size; i++) {
+  for (size_t i = 0; i < src->size; i++) {
     dest->data[i] = src->data[i];
   }
 }
@@ -148,7 +149,7 @@ static char *str_replace(char *orig, char *rep, char *with) {
 
 static char *str_tolower(char *str, size_t size) {
   char *lower_str = (char *)malloc((size + 1) * sizeof(char));
-  for (int32_t i = 0; i < size; i++) {
+  for (size_t i = 0; i < size; i++) {
     lower_str[i] = (char)tolower(str[i]);
   }
   lower_str[size] = '\0';
@@ -297,7 +298,7 @@ static int32_t try_skip(string_t *input, bool case_sensitive, byte b,
       byte_array.data = tmp.data;
       byte_array.size = tmp.size;
     }
-    int32_t uidx = index_byte(&byte_array, b - 32);
+    int32_t uidx = index_byte(&byte_array, b - (byte)32);
     if (uidx >= 0) {
       idx = uidx;
     }
@@ -311,7 +312,7 @@ static int32_t try_skip(string_t *input, bool case_sensitive, byte b,
 
 static bool is_ascii(char *runes, size_t size) {
   // TODO(conni2461): future use
-  /* for (int32_t i = 0; i < size; i++) { */
+  /* for (size_t i = 0; i < size; i++) { */
   /*   if (runes[i] >= 256) { */
   /*     return false; */
   /*   } */
@@ -422,8 +423,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
     }
 
     if (c == pchar0) {
-      int16_t score =
-          score_match + (int16_t)(bonus * bonus_first_char_multiplier);
+      int16_t score = score_match + bonus * bonus_first_char_multiplier;
       H0sub.data[off] = score;
       C0sub.data[off] = 1;
       if (M == 1 && ((forward && score > max_score) ||
@@ -1082,7 +1082,7 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
     append_pattern(pat_obj, set);
   }
   bool only = true;
-  for (int32_t i = 0; i < pat_obj->size; i++) {
+  for (size_t i = 0; i < pat_obj->size; i++) {
     term_set_t *term_set = pat_obj->ptr[i];
     if (term_set->size > 1) {
       only = false;

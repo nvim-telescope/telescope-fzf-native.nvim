@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -fpic -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion
+CFLAGS=-Wall -fpic -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wno-conversion
 COVER=#--coverage
 
 all: build/libfzf.so
@@ -16,7 +16,7 @@ lint:
 	luacheck lua
 
 format:
-	clang-format --style=file --dry-run -Werror src/* test/*
+	clang-format --style=file --dry-run -Werror src/fzf.c src/fzf.h test/test.c
 
 debug:
 	mkdir -pv build
