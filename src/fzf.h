@@ -38,11 +38,6 @@ typedef struct {
 } result_t;
 
 typedef struct {
-  int32_t score;
-  position_t *pos;
-} score_pos_tuple_t;
-
-typedef struct {
   i16_t I16;
   i32_t I32;
 } slab_t;

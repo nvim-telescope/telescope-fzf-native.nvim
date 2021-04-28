@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -fpic -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion #-Werror
+CFLAGS=-Wall -fpic -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion
 
 all: build/libfzf.so
 

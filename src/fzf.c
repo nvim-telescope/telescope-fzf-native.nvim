@@ -591,6 +591,11 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                     pos};
 }
 
+typedef struct {
+  int32_t score;
+  position_t *pos;
+} score_pos_tuple_t;
+
 static score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
                                          string_t *text, string_t *pattern,
                                          size_t sidx, size_t eidx,

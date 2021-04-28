@@ -21,9 +21,10 @@ ffi.cdef[[
   } pattern_t;
   typedef struct {} position_t;
 
+  typedef void (*handle_position)(size_t pos);
   position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab);
   void free_positions(position_t *pos);
-  void iter_positions(position_t *pos, void (*handle_position)(size_t pos));
+  void iter_positions(position_t *pos, handle_position fun);
   int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
   pattern_t *parse_pattern(int32_t case_mode, bool normalize, char *pattern);
@@ -47,11 +48,13 @@ fzf.get_pos = function(input, pattern_struct, slab)
   local pos = native.get_positions(text, pattern_struct, slab)
   local res = {}
   local i = 1
-  native.iter_positions(pos, function(v)
+  local add_cb = ffi.cast("handle_position", function(v)
     res[i] = tonumber(v) + 1
     i = i + 1;
   end)
+  native.iter_positions(pos, add_cb)
   native.free_positions(pos)
+  add_cb:free()
 
   return res
 end
