@@ -33,3 +33,31 @@ jobs:
 
       - name: Tests
         run: make test CC=clang
+  nvim-tests:
+    name: nvim-tests
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: date +%F > todays-date
+      - name: Restore cache for today's nightly.
+        uses: actions/cache@v2
+        with:
+          path: |
+            _neovim
+          key: ${{ runner.os }}-x64-${{ hashFiles('todays-date') }}
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install libcmocka-dev
+          mkdir -p ~/.local/share/nvim/site/pack/vendor/start
+          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
+          ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
+      - name: Build
+        run: make
+
+      - name: Tests
+        run: |
+          make test
+          curl -OL https://raw.githubusercontent.com/norcalli/bot-ci/master/scripts/github-actions-setup.sh
+          source github-actions-setup.sh nightly-x64
+          make ntest
