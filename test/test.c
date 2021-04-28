@@ -211,6 +211,19 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
+  test_pat(case_smart, "file\\ ", {
+    assert_int_equal(1, pat->size);
+    assert_int_equal(1, pat->cap);
+    assert_false(pat->only_inv);
+
+    assert_int_equal(1, pat->ptr[0]->size);
+    assert_int_equal(1, pat->ptr[0]->cap);
+
+    assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
+    assert_string_equal("file ", pat->ptr[0]->ptr[0].text.data);
+    assert_false(pat->ptr[0]->ptr[0].case_sensitive);
+  });
+
   test_pat(case_smart, "file\\ with\\ space", {
     assert_int_equal(1, pat->size);
     assert_int_equal(1, pat->cap);
@@ -220,8 +233,27 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[0]->cap);
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("file\ with\ space", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("file with space", pat->ptr[0]->ptr[0].text.data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
+  });
+
+  test_pat(case_smart, "file\\  new", {
+    assert_int_equal(2, pat->size);
+    assert_int_equal(2, pat->cap);
+    assert_false(pat->only_inv);
+
+    assert_int_equal(1, pat->ptr[0]->size);
+    assert_int_equal(1, pat->ptr[0]->cap);
+    assert_int_equal(1, pat->ptr[1]->size);
+    assert_int_equal(1, pat->ptr[1]->cap);
+
+    assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
+    assert_string_equal("file ", pat->ptr[0]->ptr[0].text.data);
+    assert_false(pat->ptr[0]->ptr[0].case_sensitive);
+
+    assert_int_equal(term_fuzzy, pat->ptr[1]->ptr[0].typ);
+    assert_string_equal("new", pat->ptr[1]->ptr[0].text.data);
+    assert_false(pat->ptr[1]->ptr[0].case_sensitive);
   });
 
   test_pat(case_smart, "!Lua", {
@@ -323,8 +355,7 @@ static test_fun_type test_parse_pattern(void **state) {
   });
 }
 
-static void integration_test_wrapper(char *pattern, char **input,
-                                     int *expected) {
+static void score_wrapper(char *pattern, char **input, int *expected) {
   slab_t *slab = make_slab(100 * 1024, 2048);
   pattern_t *pat = parse_pattern(case_smart, false, pattern);
   int i = 0;
@@ -340,29 +371,111 @@ static void integration_test_wrapper(char *pattern, char **input,
   free_slab(slab);
 }
 
-static test_fun_type simple_integration(void **state) {
+static test_fun_type score_integration(void **state) {
   {
     char *input[] = {"fzf", "main.c", "src/fzf", "fz/noooo", NULL};
     int expected[] = {0, 1, 0, 1};
-    integration_test_wrapper("!fzf", input, expected);
+    score_wrapper("!fzf", input, expected);
   }
   {
     char *input[] = {"src/fzf.c", "README.md", "lua/asdf", "test/test.c", NULL};
     int expected[] = {0, 1, 1, 0};
-    integration_test_wrapper("!fzf !test", input, expected);
+    score_wrapper("!fzf !test", input, expected);
+  }
+  {
+    char *input[] = {"file ", "file lua", "lua", NULL};
+    int expected[] = {0, 200, 0};
+    score_wrapper("file\\ lua", input, expected);
+  }
+  {
+    char *input[] = {"file with space", "file lua", "lua", "src", "test", NULL};
+    int expected[] = {32, 32, 0, 0, 0};
+    score_wrapper("\\ ", input, expected);
   }
   {
     char *input[] = {"src/fzf.h",       "README.md",       "build/fzf",
                      "lua/fzf_lib.lua", "Lua/fzf_lib.lua", NULL};
     int expected[] = {80, 0, 0, 0, 80};
-    integration_test_wrapper("'src | ^Lua", input, expected);
+    score_wrapper("'src | ^Lua", input, expected);
   }
   {
     char *input[] = {"lua/random_previewer", "README.md",
                      "previewers/utils.lua", "previewers/buffer.lua",
                      "previewers/term.lua",  NULL};
     int expected[] = {0, 0, 328, 328, 0};
-    integration_test_wrapper(".lua$ 'previewer !'term", input, expected);
+    score_wrapper(".lua$ 'previewer !'term", input, expected);
+  }
+}
+
+static void pos_wrapper(char *pattern, char **input, int **expected) {
+  slab_t *slab = make_slab(100 * 1024, 2048);
+  pattern_t *pat = parse_pattern(case_smart, false, pattern);
+  int i = 0;
+  char *one = input[i];
+  while (one != NULL) {
+    position_t *pos = get_positions(one, pat, slab);
+    for (size_t j = 0; j < pos->size; j++) {
+      assert_int_equal(expected[i][j], pos->data[j]);
+    }
+    i++;
+    one = input[i];
+  }
+
+  free_pattern(pat);
+  free_slab(slab);
+}
+
+static test_fun_type pos_integration(void **state) {
+  {
+    char *input[] = {"src/fzf.c",       "src/fzf.h",
+                     "lua/fzf_lib.lua", "lua/telescope/_extensions/fzf.lua",
+                     "README.md",       NULL};
+    int match1[] = {6, 5, 4};
+    int match2[] = {6, 5, 4};
+    int match3[] = {6, 5, 4};
+    int match4[] = {28, 27, 26};
+    int *expected[] = {match1, match2, match3, match4, NULL};
+    pos_wrapper("fzf", input, expected);
+  }
+  {
+    char *input[] = {"fzf", "main.c", "src/fzf", "fz/noooo", NULL};
+    int *expected[] = {};
+    pos_wrapper("!fzf", input, expected);
+  }
+  {
+    char *input[] = {"src/fzf.c", "README.md", "lua/asdf", "test/test.c", NULL};
+    int *expected[] = {};
+    pos_wrapper("!fzf !test", input, expected);
+  }
+  {
+    char *input[] = {"file ", "file lua", "lua", NULL};
+    int match1[] = {7, 6, 5, 4, 3, 2, 1, 0};
+    int *expected[] = {NULL, match1, NULL};
+    pos_wrapper("file\\ lua", input, expected);
+  }
+  {
+    char *input[] = {"file with space", "lul lua", "lua", "src", "test", NULL};
+    int match1[] = {4};
+    int match2[] = {3};
+    int *expected[] = {match1, match2, NULL, NULL, NULL};
+    pos_wrapper("\\ ", input, expected);
+  }
+  {
+    char *input[] = {"src/fzf.h",       "README.md",       "build/fzf",
+                     "lua/fzf_lib.lua", "Lua/fzf_lib.lua", NULL};
+    int match1[] = {0, 1, 2};
+    int match2[] = {0, 1, 2};
+    int *expected[] = {match1, NULL, NULL, NULL, match2};
+    pos_wrapper("'src | ^Lua", input, expected);
+  }
+  {
+    char *input[] = {"lua/random_previewer", "README.md",
+                     "previewers/utils.lua", "previewers/buffer.lua",
+                     "previewers/term.lua",  NULL};
+    int match1[] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+    int match2[] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+    int *expected[] = {NULL, NULL, match1, match2, NULL};
+    pos_wrapper(".lua$ 'previewer !'term", input, expected);
   }
 }
 
@@ -380,7 +493,8 @@ int main(void) {
       cmocka_unit_test(test_parse_pattern),
 
       // Integration
-      cmocka_unit_test(simple_integration),
+      cmocka_unit_test(score_integration),
+      cmocka_unit_test(pos_integration),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }

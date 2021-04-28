@@ -26,7 +26,9 @@ ffi.cdef[[
     size_t cap;
   } position_t;
 
-  position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
+  position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab);
+  void free_positions(position_t *pos);
+  void iter_positions(position_t *pos, void (*handle_position)(size_t pos));
   int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
   pattern_t *parse_pattern(int32_t case_mode, bool normalize, char *pattern);
@@ -34,8 +36,6 @@ ffi.cdef[[
 
   slab_t *make_slab(size_t size_16, size_t size_32);
   void free_slab(slab_t *slab);
-
-  void free(void *ptr);
 ]]
 
 local fzf = {}
@@ -51,10 +51,12 @@ fzf.get_pos = function(input, pattern_struct, slab)
   ffi.copy(text, input)
   local pos = native.get_positions(text, pattern_struct, slab)
   local res = {}
-  for i = 0, tonumber(pos.size) - 1 do
-    res[i + 1] = pos.data[i] + 1
-  end
-  native.free(pos.data)
+  local i = 1
+  native.iter_positions(pos, function(v)
+    res[i] = tonumber(v) + 1
+    i = i + 1;
+  end)
+  native.free_positions(pos)
 
   return res
 end

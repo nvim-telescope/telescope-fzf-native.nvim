@@ -1140,7 +1140,6 @@ int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
       } else if (term->inv) {
         current_score = 0;
         matched = true;
-        continue;
       }
     }
     if (matched) {
@@ -1154,44 +1153,67 @@ int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
   return total_score;
 }
 
-position_t get_positions(char *text, pattern_t *pattern, slab_t *slab) {
+position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab) {
   string_t input = {.data = text, .size = strlen(text)};
 
-  position_t all_pos;
-  all_pos.cap = 1;
-  all_pos.size = 0;
-  all_pos.data = (size_t *)malloc(sizeof(size_t));
+  position_t *all_pos = pos_array(true, 1);
 
   for (size_t i = 0; i < pattern->size; i++) {
     term_set_t *term_set = pattern->ptr[i];
+    result_t current_res;
+    bool matched = false;
     for (size_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
       result_t res = term->alg(term->case_sensitive, false, true, &input,
                                &term->text, true, slab);
-      if (res.start >= 0) {
-        if (term->inv) {
-          continue;
-        }
-        if (res.pos) {
-          concat_pos(&all_pos, res.pos);
-          free(res.pos->data);
-          free(res.pos);
-        } else {
-          int32_t diff = (res.end - res.start);
-          if (diff > 0) {
-            size_t start = (size_t)res.start, end = (size_t)res.end;
-            resize_pos(&all_pos, (size_t)diff);
-            for (size_t k = start; k < end; k++) {
-              all_pos.data[all_pos.size] = k;
-              all_pos.size++;
-            }
+      if (res.start < 0 || term->inv) {
+        free_positions(res.pos);
+        continue;
+      }
+      current_res = res;
+      matched = true;
+    }
+    if (matched) {
+      if (current_res.pos) {
+        concat_pos(all_pos, current_res.pos);
+        free_positions(current_res.pos);
+      } else {
+        /* TODO(conni2461): I think this is bagging to be for a function */
+        int32_t diff = (current_res.end - current_res.start);
+        if (diff > 0) {
+          size_t start = (size_t)current_res.start,
+                 end = (size_t)current_res.end;
+          resize_pos(all_pos, (size_t)diff);
+          for (size_t k = start; k < end; k++) {
+            all_pos->data[all_pos->size] = k;
+            all_pos->size++;
           }
         }
       }
+    } else {
+      free(all_pos->data);
+      all_pos->data = NULL;
+      all_pos->cap = 0;
+      all_pos->size = 0;
+      break;
     }
   }
-
   return all_pos;
+}
+
+void free_positions(position_t *pos) {
+  if (pos) {
+    if (pos->data) {
+      free(pos->data);
+    }
+    free(pos);
+  }
+}
+
+void iter_positions(position_t *pos, void (*handle_position)(size_t pos)) {
+  for (size_t i = 0; i < pos->size; i++) {
+    handle_position(pos->data[i]);
+  }
 }
 
 slab_t *make_slab(size_t size_16, size_t size_32) {

@@ -117,7 +117,9 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
 pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern);
 void free_pattern(pattern_t *pattern);
 
-position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
+position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab);
+void free_positions(position_t *pos);
+void iter_positions(position_t *pos, void (*handle_position)(size_t pos));
 int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
 slab_t *make_slab(size_t size_16, size_t size_32);
