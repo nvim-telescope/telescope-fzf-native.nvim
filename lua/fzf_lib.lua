@@ -19,12 +19,7 @@ ffi.cdef[[
     size_t size;
     size_t cap;
   } pattern_t;
-
-  typedef struct {
-    int32_t *data;
-    size_t size;
-    size_t cap;
-  } position_t;
+  typedef struct {} position_t;
 
   position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab);
   void free_positions(position_t *pos);
@@ -34,7 +29,7 @@ ffi.cdef[[
   pattern_t *parse_pattern(int32_t case_mode, bool normalize, char *pattern);
   void free_pattern(pattern_t *pattern);
 
-  slab_t *make_slab(size_t size_16, size_t size_32);
+  slab_t *make_default_slab(void);
   void free_slab(slab_t *slab);
 ]]
 
@@ -73,7 +68,7 @@ fzf.free_pattern = function(p)
 end
 
 fzf.allocate_slab = function()
-  return native.make_slab(100 * 1024, 2048)
+  return native.make_default_slab()
 end
 
 fzf.free_slab = function(s)

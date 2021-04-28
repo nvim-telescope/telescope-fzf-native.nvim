@@ -47,7 +47,7 @@ This section is not addressed towards users of the telescope extension.
 ### C Interface
 
 ```c
-slab_t *slab = make_slab(100 * 1024, 2048);
+slab_t *slab = make_default_slab();
 /* case_mode enum: case_smart = 0, case_ignore, case_respect
  * normalize bool: always set to false because its not implemented yet. This
  *                 is reserved for future use

@@ -123,6 +123,7 @@ void iter_positions(position_t *pos, void (*handle_position)(size_t pos));
 int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
 slab_t *make_slab(size_t size_16, size_t size_32);
+slab_t *make_default_slab(void);
 void free_slab(slab_t *slab);
 
 /* UTILS */

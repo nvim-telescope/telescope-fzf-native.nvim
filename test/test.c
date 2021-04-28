@@ -22,7 +22,7 @@
     }                                                                          \
   }                                                                            \
   {                                                                            \
-    slab_t *slab = make_slab(100 * 1024, 2048);                                \
+    slab_t *slab = make_default_slab();                                        \
     string_t text = {.data = txt, .size = strlen(txt)};                        \
     string_t pattern = {.data = pat, .size = strlen(pat)};                     \
     result_t res = alg(case, false, true, &text, &pattern, true, slab);        \
@@ -356,7 +356,7 @@ static test_fun_type test_parse_pattern(void **state) {
 }
 
 static void score_wrapper(char *pattern, char **input, int *expected) {
-  slab_t *slab = make_slab(100 * 1024, 2048);
+  slab_t *slab = make_default_slab();
   pattern_t *pat = parse_pattern(case_smart, false, pattern);
   int i = 0;
   char *one = input[i];
@@ -408,7 +408,7 @@ static test_fun_type score_integration(void **state) {
 }
 
 static void pos_wrapper(char *pattern, char **input, int **expected) {
-  slab_t *slab = make_slab(100 * 1024, 2048);
+  slab_t *slab = make_default_slab();
   pattern_t *pat = parse_pattern(case_smart, false, pattern);
   int i = 0;
   char *one = input[i];

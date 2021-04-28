@@ -1235,6 +1235,10 @@ slab_t *make_slab(size_t size_16, size_t size_32) {
   return slab;
 }
 
+slab_t *make_default_slab(void) {
+  return make_slab(100 * 1024, 2048);
+}
+
 void free_slab(slab_t *slab) {
   if (slab) {
     free(slab->I16.data);
