@@ -3,8 +3,8 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  x64-ubuntu:
-    name: X64-ubuntu
+  gcc:
+    name: gcc
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -12,8 +12,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libcmocka-dev
+          gcc --version
       - name: Build
-        run: make
+        run: make CC=gcc
 
       - name: Tests
-        run: make test
+        run: make test CC=gcc
+  clang:
+    name: clang
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install libcmocka-dev
+          clang --version
+      - name: Build
+        run: make CC=clang
+
+      - name: Tests
+        run: make test CC=clang
