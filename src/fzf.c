@@ -190,7 +190,7 @@ static void resize_pos(position_t *pos, size_t add_len) {
 }
 
 static void append_pos(position_t *pos, size_t value) {
-  resize_pos(pos, 1); // think about that 1 again
+  resize_pos(pos, pos->cap);
   pos->data[pos->size] = value;
   pos->size++;
 }
@@ -934,10 +934,7 @@ static void append_set(term_set_t *set, term_t value) {
     set->cap = 1;
     set->ptr = (term_t *)malloc(sizeof(term_t));
   } else if (set->size + 1 > set->cap) {
-    // I want to keep this set as thight as possible. This function should not
-    // be called that often because it only happens inside the pattern
-    // determination, which happens only once for each pattern.
-    set->cap++;
+    set->cap *= 2;
     set->ptr = realloc(set->ptr, sizeof(term_t) * set->cap);
     assert(set->ptr != NULL);
   }
@@ -950,8 +947,7 @@ static void append_pattern(pattern_t *pattern, term_set_t *value) {
     pattern->cap = 1;
     pattern->ptr = (term_set_t **)malloc(sizeof(term_set_t *));
   } else if (pattern->size + 1 > pattern->cap) {
-    // Same reason as append_set. Need to think about this more
-    pattern->cap++;
+    pattern->cap *= 2;
     pattern->ptr = realloc(pattern->ptr, sizeof(term_set_t *) * pattern->cap);
     assert(pattern->ptr != NULL);
   }
