@@ -167,23 +167,27 @@ int main(int argc, char *argv[]) {
   }
   get_test_file(&file);
 
-  char *patterns[] = {"size_t", "'int | 'short", "^include", "define", NULL};
+  char *patterns[] = {"size_t", "'int | 'short", "^include", "define",
+                      "std::vector"};
+  size_t patterns_size = 4;
+
+  double main_start = get_time();
 
   for (size_t i = 0; i < RUNS; i++) {
     double start = get_time();
-    size_t k = 0;
-    char *pat_str = patterns[k];
-    while (pat_str != NULL) {
+    for (size_t k = 0; k < patterns_size; k++) {
+      char *pat_str = patterns[k];
       pattern_t *pattern = parse_pattern(case_smart, false, pat_str);
       for (size_t j = 0; j < file.len; j++) {
         get_score(file.data[j].data, pattern, slab);
       }
       free_pattern(pattern);
-      pat_str = patterns[++k];
     }
     results[i] = get_time() - start;
   }
-
+  printf("Total elapsed time: %fs, (%d RUNS, %zu line file, %zu pattern "
+         "matched)\n",
+         get_time() - main_start, RUNS, file.len, patterns_size);
   min_max_t mm = minmax(results);
   printf("min: %fs , max: %fs, mean: %fs, median: %fs, std: %fs\n", mm.min,
          mm.max, mean(results), median(results), stdDeviation(results));

@@ -36,7 +36,7 @@
   } name##_slice_t;                                                            \
   static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
     return (name##_slice_t){.data = input + from, .size = to - from};          \
-  }                                                                            \
+  }
 
 gen_slice(i16, int16_t);
 gen_simple_slice(i32, int32_t);

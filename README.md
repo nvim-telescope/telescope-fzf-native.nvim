@@ -44,6 +44,9 @@ This section is only addressed towards developers who plan to use the library
 (c or lua bindings).
 This section is not addressed towards users of the telescope extension.
 
+(**Disclaimer**: Interface is not jet stable. The library is still in
+development)
+
 ### C Interface
 
 ```c
