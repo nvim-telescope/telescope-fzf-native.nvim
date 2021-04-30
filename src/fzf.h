@@ -121,19 +121,4 @@ slab_t *make_slab(size_t size_16, size_t size_32);
 slab_t *make_default_slab(void);
 void free_slab(slab_t *slab);
 
-/* UTILS */
-// Helpers for slice
-#define slice_def(name, type)                                                  \
-  typedef struct {                                                             \
-    type *data;                                                                \
-    size_t size;                                                               \
-  } name##_slice_t;                                                            \
-                                                                               \
-  name##_slice_t slice_##name(type *input, size_t from, size_t to);            \
-  name##_slice_t slice_##name##_right(type *input, size_t to);
-slice_def(i16, int16_t);
-slice_def(i32, int32_t);
-slice_def(str, char);
-#undef slice_def
-
 #endif // _fzf_H_

@@ -17,18 +17,32 @@
     free(obj.data);                                                            \
   }
 
-#define slice_impl(name, type)                                                 \
-  name##_slice_t slice_##name(type *input, size_t from, size_t to) {           \
+#define gen_slice(name, type)                                                  \
+  typedef struct {                                                             \
+    type *data;                                                                \
+    size_t size;                                                               \
+  } name##_slice_t;                                                            \
+  static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
     return (name##_slice_t){.data = input + from, .size = to - from};          \
   }                                                                            \
-  name##_slice_t slice_##name##_right(type *input, size_t to) {                \
+  static name##_slice_t slice_##name##_right(type *input, size_t to) {         \
     return slice_##name(input, 0, to);                                         \
   }
 
-slice_impl(i16, int16_t);
-slice_impl(i32, int32_t);
-slice_impl(str, char);
-#undef slice_impl
+#define gen_simple_slice(name, type)                                           \
+  typedef struct {                                                             \
+    type *data;                                                                \
+    size_t size;                                                               \
+  } name##_slice_t;                                                            \
+  static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
+    return (name##_slice_t){.data = input + from, .size = to - from};          \
+  }                                                                            \
+
+gen_slice(i16, int16_t);
+gen_simple_slice(i32, int32_t);
+gen_slice(str, char);
+#undef gen_slice
+#undef gen_simple_slice
 
 // Its just better if this are shorts
 typedef enum {
