@@ -76,8 +76,6 @@ typedef struct {
   bool only_inv;
 } pattern_t;
 
-/* Algorithms */
-/* TODO(conni2461): do i want to hide the actual algorithms ?!? */
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                         string_t *text, string_t *pattern, bool with_pos,
                         slab_t *slab);
