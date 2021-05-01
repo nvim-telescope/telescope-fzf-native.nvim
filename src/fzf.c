@@ -44,7 +44,10 @@ gen_slice(str, char);
 #undef gen_slice
 #undef gen_simple_slice
 
-// Its just better if this are shorts
+/* TODO(conni2461): additional types (utf8) */
+typedef int32_t char_class;
+typedef char byte;
+
 typedef enum {
   score_match = 16,
   score_gap_start = -3,
@@ -55,6 +58,14 @@ typedef enum {
   bonus_consecutive = -(score_gap_start + score_gap_extention),
   bonus_first_char_multiplier = 2,
 } score_t;
+
+typedef enum {
+  char_non_word = 0,
+  char_lower,
+  char_upper,
+  char_letter,
+  char_number
+} char_types;
 
 static int32_t index_byte(string_t *string, char b) {
   for (size_t i = 0; i < string->size; i++) {
@@ -213,6 +224,14 @@ static void concat_pos(position_t *left, position_t *right) {
   resize_pos(left, right->size);
   memcpy(left->data + left->size, right->data, right->size * sizeof(size_t));
   left->size += right->size;
+}
+
+static void insert_pos(position_t *pos, size_t start, size_t end) {
+  resize_pos(pos, end - start);
+  for (size_t k = start; k < end; k++) {
+    pos->data[pos->size] = k;
+    pos->size++;
+  }
 }
 
 static i16_t alloc16(size_t *offset, slab_t *slab, size_t size) {
@@ -1175,41 +1194,37 @@ position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab) {
 
   for (size_t i = 0; i < pattern->size; i++) {
     term_set_t *term_set = pattern->ptr[i];
-    result_t current_res;
+    result_t current_res = (result_t){0, 0, 0, NULL};
     bool matched = false;
     for (size_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
       result_t res = term->alg(term->case_sensitive, false, true, &input,
                                &term->text, true, slab);
-      if (res.start < 0 || term->inv) {
-        free_positions(res.pos);
-        continue;
+      if (res.start >= 0) {
+        if (term->inv) {
+          free_positions(res.pos);
+          continue;
+        }
+        current_res = res;
+        matched = true;
+      } else if (term->inv) {
+        matched = true;
       }
-      current_res = res;
-      matched = true;
     }
     if (matched) {
       if (current_res.pos) {
         concat_pos(all_pos, current_res.pos);
         free_positions(current_res.pos);
       } else {
-        /* TODO(conni2461): I think this is bagging to be for a function */
         int32_t diff = (current_res.end - current_res.start);
         if (diff > 0) {
-          size_t start = (size_t)current_res.start,
-                 end = (size_t)current_res.end;
-          resize_pos(all_pos, (size_t)diff);
-          for (size_t k = start; k < end; k++) {
-            all_pos->data[all_pos->size] = k;
-            all_pos->size++;
-          }
+          insert_pos(all_pos, (size_t)current_res.start,
+                     (size_t)current_res.end);
         }
       }
     } else {
       free(all_pos->data);
-      all_pos->data = NULL;
-      all_pos->cap = 0;
-      all_pos->size = 0;
+      memset(all_pos, 0, sizeof(*all_pos));
       break;
     }
   }

@@ -42,17 +42,6 @@ typedef struct {
   i32_t I32;
 } slab_t;
 
-typedef int32_t char_class;
-typedef char byte; // ADDITIONAL NEED TO FIGURE OUT THESE MISSING TYPES
-
-typedef enum {
-  char_non_word = 0,
-  char_lower,
-  char_upper,
-  char_letter,
-  char_number
-} char_types;
-
 typedef enum {
   term_fuzzy = 0,
   term_exact,
@@ -65,7 +54,6 @@ typedef enum { case_smart = 0, case_ignore, case_respect } case_types;
 
 typedef result_t (*algorithm_t)(bool, bool, bool, string_t *, string_t *, bool,
                                 slab_t *);
-
 typedef struct {
   alg_types typ;
   algorithm_t alg;
@@ -89,6 +77,7 @@ typedef struct {
 } pattern_t;
 
 /* Algorithms */
+/* TODO(conni2461): do i want to hide the actual algorithms ?!? */
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
                         string_t *text, string_t *pattern, bool with_pos,
                         slab_t *slab);

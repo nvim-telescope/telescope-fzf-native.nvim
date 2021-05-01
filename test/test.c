@@ -443,6 +443,12 @@ static test_fun_type pos_integration(void **state) {
     pos_wrapper("!fzf", input, expected);
   }
   {
+    char *input[] = {"src/fzf.c", "lua/fzf_lib.lua", "build/libfzf", NULL};
+    int match1[] = {6, 5, 4};
+    int *expected[] = {match1, NULL, NULL};
+    pos_wrapper("fzf !lib", input, expected);
+  }
+  {
     char *input[] = {"src/fzf.c", "README.md", "lua/asdf", "test/test.c", NULL};
     int *expected[] = {};
     pos_wrapper("!fzf !test", input, expected);
@@ -472,8 +478,8 @@ static test_fun_type pos_integration(void **state) {
     char *input[] = {"lua/random_previewer", "README.md",
                      "previewers/utils.lua", "previewers/buffer.lua",
                      "previewers/term.lua",  NULL};
-    int match1[] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
-    int match2[] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+    int match1[] = {16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+    int match2[] = {17, 18, 19, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8};
     int *expected[] = {NULL, NULL, match1, match2, NULL};
     pos_wrapper(".lua$ 'previewer !'term", input, expected);
   }
