@@ -5,13 +5,23 @@ on: [push, pull_request]
 jobs:
   gcc:
     name: gcc
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-10.15]
+        include:
+          - os: ubuntu-20.04
+            manager: sudo apt-get
+            packages: libcmocka-dev
+          - os: macos-10.15
+            manager: brew
+            packages: cmocka gcc
     steps:
       - uses: actions/checkout@v2
       - name: Prepare
         run: |
-          sudo apt-get update
-          sudo apt-get install libcmocka-dev
+          ${{ matrix.manager }} update
+          ${{ matrix.manager }} install ${{ matrix.packages }}
           gcc --version
       - name: Build
         run: make CC=gcc
@@ -20,13 +30,23 @@ jobs:
         run: make test CC=gcc
   clang:
     name: clang
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-10.15]
+        include:
+          - os: ubuntu-20.04
+            manager: sudo apt-get
+            packages: libcmocka-dev
+          - os: macos-10.15
+            manager: brew
+            packages: cmocka llvm
     steps:
       - uses: actions/checkout@v2
       - name: Prepare
         run: |
-          sudo apt-get update
-          sudo apt-get install libcmocka-dev
+          ${{ matrix.manager }} update
+          ${{ matrix.manager }} install ${{ matrix.packages }}
           clang --version
       - name: Build
         run: make CC=clang
@@ -35,7 +55,15 @@ jobs:
         run: make test CC=clang
   nvim-tests:
     name: nvim-tests
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-10.15]
+        include:
+          - os: ubuntu-20.04
+            url: https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz
+          - os: macos-10.15
+            url: https://github.com/neovim/neovim/releases/download/nightly/nvim-macos.tar.gz
     steps:
       - uses: actions/checkout@v2
       - run: date +%F > todays-date
@@ -44,11 +72,13 @@ jobs:
         with:
           path: |
             _neovim
-          key: ${{ runner.os }}-x64-${{ hashFiles('todays-date') }}
+          key: ${{ matrix.os }}-${{ hashFiles('todays-date') }}
       - name: Prepare
         run: |
-          sudo apt-get update
-          sudo apt-get install libcmocka-dev
+          test -d _neovim || {
+            mkdir -p _neovim
+            curl -sL ${{ matrix.url }} | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
+          }
           mkdir -p ~/.local/share/nvim/site/pack/vendor/start
           git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
           ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
@@ -57,7 +87,7 @@ jobs:
 
       - name: Tests
         run: |
-          make test
-          curl -OL https://raw.githubusercontent.com/norcalli/bot-ci/master/scripts/github-actions-setup.sh
-          source github-actions-setup.sh nightly-x64
+          export PATH="${PWD}/_neovim/bin:${PATH}"
+          export VIM="${PWD}/_neovim/share/nvim/runtime"
+          nvim --version
           make ntest
