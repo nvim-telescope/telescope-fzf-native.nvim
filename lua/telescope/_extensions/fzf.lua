@@ -21,8 +21,12 @@ local get_fzf_sorter = function(opts)
   local case_mode = case_enum[opts.case_mode]
   local post_or = false
   local post_inv = false
+  local post_escape = false
+  local pattern_obj = nil
 
   local get_struct = function(self, prompt)
+    if pattern_obj then return pattern_obj end
+
     local struct = self.state.prompt_cache[prompt]
     if not struct then
       struct = fzf.parse_pattern(prompt, case_mode)
@@ -41,9 +45,10 @@ local get_fzf_sorter = function(opts)
         fzf.free_pattern(v)
       end
       fzf.free_slab(self.state.slab)
+      pattern_obj = nil
     end,
     start = function(self, prompt)
-      get_struct(self, prompt)
+      pattern_obj = get_struct(self, prompt)
       local last = prompt:sub(-1, -1)
 
       if last == '|' then
@@ -58,6 +63,14 @@ local get_fzf_sorter = function(opts)
         post_or = false
       end
 
+      if last == '\\' and not post_escape then
+        self._discard_state.filtered = {}
+        post_escape = true
+      else
+        self._discard_state.filtered = {}
+        post_escape = false
+      end
+
       if last == '!' and not post_inv then
         post_inv = true
         self._discard_state.filtered = {}
@@ -67,14 +80,15 @@ local get_fzf_sorter = function(opts)
         post_inv = false
       end
     end,
+    finish = function()
+      pattern_obj = nil
+    end,
     discard = true,
     scoring_function = function(self, prompt, line)
-      local pattern_obj = get_struct(self, prompt)
-      if pattern_obj.size == 0 then
-        return 1
-      end
+      local obj = get_struct(self, prompt)
+      if obj.size == 0 then return 1 end
 
-      local score = fzf.get_score(line, pattern_obj, self.state.slab)
+      local score = fzf.get_score(line, obj, self.state.slab)
       if score == 0 then
         return -1
       else

@@ -44,10 +44,13 @@ This section is only addressed towards developers who plan to use the library
 (c or lua bindings).
 This section is not addressed towards users of the telescope extension.
 
+(**Disclaimer**: Interface is not yet stable. The library is still in
+development)
+
 ### C Interface
 
 ```c
-slab_t *slab = make_slab(100 * 1024, 2048);
+slab_t *slab = make_default_slab();
 /* case_mode enum: case_smart = 0, case_ignore, case_respect
  * normalize bool: always set to false because its not implemented yet. This
  *                 is reserved for future use
@@ -56,9 +59,10 @@ slab_t *slab = make_slab(100 * 1024, 2048);
 pattern_t *pattern = parse_pattern(case_smart, false, "src | lua !.c$");
 
 /* you can get the score/position for as many items as you want */
-get_score(line, pattern, slab);
-get_positions(line, pattern, slab);
+int score = get_score(line, pattern, slab);
+position_t *pos = get_positions(line, pattern, slab);
 
+free_positions(pos);
 free_pattern(pattern);
 free_slab(slab);
 ```
@@ -75,8 +79,11 @@ local pattern_obj = fzf.parse_pattern(pattern, case_mode)
 
 -- you can get the score/position for as many items as you want
 -- line: string
-fzf.get_score(line, pattern_obj, slab)
-fzf.get_pos(line, pattern_obj, slab)
+-- score: number
+local score = fzf.get_score(line, pattern_obj, slab)
+
+-- table (does not have to be freed)
+local pos = fzf.get_pos(line, pattern_obj, slab)
 
 fzf.free_pattern(pattern_obj)
 fzf.free_slab(slab)

@@ -16,26 +16,22 @@ ffi.cdef[[
   typedef struct {} term_set_t;
   typedef struct {
     term_set_t **ptr;
-    int32_t size;
-    int32_t cap;
+    size_t size;
+    size_t cap;
   } pattern_t;
+  typedef struct {} position_t;
 
-  typedef struct {
-    int32_t *data;
-    int32_t size;
-    int32_t cap;
-  } position_t;
-
-  position_t get_positions(char *text, pattern_t *pattern, slab_t *slab);
+  typedef void (*handle_position)(size_t pos);
+  position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab);
+  void free_positions(position_t *pos);
+  void iter_positions(position_t *pos, handle_position fun);
   int32_t get_score(char *text, pattern_t *pattern, slab_t *slab);
 
   pattern_t *parse_pattern(int32_t case_mode, bool normalize, char *pattern);
   void free_pattern(pattern_t *pattern);
 
-  slab_t *make_slab(int32_t size_16, int32_t size_32);
+  slab_t *make_default_slab(void);
   void free_slab(slab_t *slab);
-
-  void free(void *ptr);
 ]]
 
 local fzf = {}
@@ -51,10 +47,14 @@ fzf.get_pos = function(input, pattern_struct, slab)
   ffi.copy(text, input)
   local pos = native.get_positions(text, pattern_struct, slab)
   local res = {}
-  for i = 0, pos.size - 1 do
-    res[i + 1] = pos.data[i] + 1
-  end
-  native.free(pos.data)
+  local i = 1
+  local add_cb = ffi.cast("handle_position", function(v)
+    res[i] = tonumber(v) + 1
+    i = i + 1;
+  end)
+  native.iter_positions(pos, add_cb)
+  native.free_positions(pos)
+  add_cb:free()
 
   return res
 end
@@ -71,7 +71,7 @@ fzf.free_pattern = function(p)
 end
 
 fzf.allocate_slab = function()
-  return native.make_slab(100 * 1024, 2048)
+  return native.make_default_slab()
 end
 
 fzf.free_slab = function(s)
