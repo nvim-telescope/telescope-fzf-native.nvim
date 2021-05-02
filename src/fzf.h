@@ -24,6 +24,14 @@ typedef struct {
 } string_t;
 
 typedef struct {
+  int32_t *data;
+  size_t len;
+} utf8str_t;
+
+utf8str_t into_utf8(const char *str);
+void free_utfstr(utf8str_t *str);
+
+typedef struct {
   size_t *data;
   size_t size;
   size_t cap;
@@ -92,7 +100,7 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
                       string_t *text, string_t *pattern, bool with_pos,
                       slab_t *slab);
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
-                     string_t *text, string_t *pattern, bool with_pos,
+                     utf8str_t *text, utf8str_t *pattern, bool with_pos,
                      slab_t *slab);
 
 /* interface */

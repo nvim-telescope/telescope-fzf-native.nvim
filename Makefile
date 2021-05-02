@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Werror -fpic
+CFLAGS=-Wall -fpic
 COVER=#--coverage
 
 all: build/libfzf.so
