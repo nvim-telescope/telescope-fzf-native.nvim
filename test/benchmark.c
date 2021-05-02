@@ -83,6 +83,11 @@ static min_max_t minmax(double *a) {
 }
 
 typedef struct {
+  char *data;
+  size_t size;
+} string_t;
+
+typedef struct {
   string_t *data;
   size_t cap;
   size_t len;

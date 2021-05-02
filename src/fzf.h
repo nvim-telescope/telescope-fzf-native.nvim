@@ -19,11 +19,6 @@ typedef struct {
 } i32_t;
 
 typedef struct {
-  char *data;
-  size_t size;
-} string_t;
-
-typedef struct {
   int32_t *data;
   size_t len;
 } utf8str_t;
@@ -60,14 +55,13 @@ typedef enum {
 
 typedef enum { case_smart = 0, case_ignore, case_respect } case_types;
 
-typedef result_t (*algorithm_t)(bool, bool, bool, string_t *, string_t *, bool,
-                                slab_t *);
+typedef result_t (*algorithm_t)(bool, bool, bool, utf8str_t *, utf8str_t *,
+                                bool, slab_t *);
 typedef struct {
   alg_types typ;
   algorithm_t alg;
   bool inv;
-  char *ptr;
-  string_t text;
+  utf8str_t text;
   bool case_sensitive;
 } term_t;
 
@@ -85,19 +79,19 @@ typedef struct {
 } pattern_t;
 
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        string_t *text, string_t *pattern, bool with_pos,
+                        utf8str_t *text, utf8str_t *pattern, bool with_pos,
                         slab_t *slab);
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        string_t *text, string_t *pattern, bool with_pos,
+                        utf8str_t *text, utf8str_t *pattern, bool with_pos,
                         slab_t *slab);
 result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
-                           string_t *text, string_t *pattern, bool with_pos,
+                           utf8str_t *text, utf8str_t *pattern, bool with_pos,
                            slab_t *slab);
 result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
-                      string_t *text, string_t *pattern, bool with_pos,
+                      utf8str_t *text, utf8str_t *pattern, bool with_pos,
                       slab_t *slab);
 result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
-                      string_t *text, string_t *pattern, bool with_pos,
+                      utf8str_t *text, utf8str_t *pattern, bool with_pos,
                       slab_t *slab);
 result_t equal_match(bool case_sensitive, bool normalize, bool forward,
                      utf8str_t *text, utf8str_t *pattern, bool with_pos,

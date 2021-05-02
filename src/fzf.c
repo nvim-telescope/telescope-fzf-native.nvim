@@ -32,24 +32,13 @@ typedef unsigned char char_u;
     return slice_##name(input, 0, to);                                         \
   }
 
-#define gen_simple_slice(name, type)                                           \
-  typedef struct {                                                             \
-    type *data;                                                                \
-    size_t size;                                                               \
-  } name##_slice_t;                                                            \
-  static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
-    return (name##_slice_t){.data = input + from, .size = to - from};          \
-  }
-
 gen_slice(i16, int16_t);
-gen_simple_slice(i32, int32_t);
-gen_slice(str, char);
+gen_slice(i32, int32_t);
 #undef gen_slice
 #undef gen_simple_slice
 
 /* TODO(conni2461): additional types (utf8) */
-typedef int32_t char_class;
-typedef char byte;
+typedef int16_t char_class;
 
 typedef enum {
   score_match = 16,
@@ -70,18 +59,18 @@ typedef enum {
   char_number
 } char_types;
 
-static int32_t index_byte(string_t *string, char b) {
-  for (size_t i = 0; i < string->size; i++) {
-    if (string->data[i] == b) {
+static int32_t index_byte(i32_slice_t *slice, int32_t cp) {
+  for (size_t i = 0; i < slice->size; i++) {
+    if (slice->data[i] == cp) {
       return (int32_t)i;
     }
   }
   return -1;
 }
 
-static size_t leading_whitespaces(string_t *str) {
+static size_t leading_whitespaces(utf8str_t *str) {
   size_t whitespaces = 0;
-  for (size_t i = 0; i < str->size; i++) {
+  for (size_t i = 0; i < str->len; i++) {
     if (!isspace(str->data[i])) {
       break;
     }
@@ -90,9 +79,9 @@ static size_t leading_whitespaces(string_t *str) {
   return whitespaces;
 }
 
-static size_t trailing_whitespaces(string_t *str) {
+static size_t trailing_whitespaces(utf8str_t *str) {
   size_t whitespaces = 0;
-  for (size_t i = str->size - 1; i >= 0; i--) {
+  for (size_t i = str->len - 1; i >= 0; i--) {
     if (!isspace(str->data[i])) {
       break;
     }
@@ -101,13 +90,13 @@ static size_t trailing_whitespaces(string_t *str) {
   return whitespaces;
 }
 
-static void copy_runes(string_t *src, i32_t *destination) {
-  for (size_t i = 0; i < src->size; i++) {
-    destination->data[i] = (int32_t)src->data[i];
+static void copy_runes(const utf8str_t *src, i32_t *destination) {
+  for (size_t i = 0; i < src->len; i++) {
+    destination->data[i] = src->data[i];
   }
 }
 
-static void copy_into_i16(i16_slice_t *src, i16_t *dest) {
+static void copy_into_i16(const i16_slice_t *src, i16_t *dest) {
   for (size_t i = 0; i < src->size; i++) {
     dest->data[i] = src->data[i];
   }
@@ -126,14 +115,14 @@ static char *trim_left(char *str, size_t *len, char trim) {
   return str;
 }
 
-static bool has_prefix(char *str, char *prefix, size_t prefix_len) {
+static bool has_prefix(const char *str, char *prefix, size_t prefix_len) {
   return strncmp(prefix, str, prefix_len) == 0;
 }
 
-static bool has_suffix(char *str, size_t len, char *suffix, size_t suffix_len) {
+static bool has_suffix(const char *str, size_t len, char *suffix,
+                       size_t suffix_len) {
   return len >= suffix_len &&
-         strncmp(slice_str(str, len - suffix_len, len).data, suffix,
-                 suffix_len) == 0;
+         strncmp(str + (len - suffix_len), suffix, suffix_len) == 0;
 }
 
 static char *str_replace(char *orig, char *rep, char *with) {
@@ -347,6 +336,10 @@ int32_t utf8_toupper(int32_t cp) {
 }
 
 static bool utf8_islower(int32_t chr) {
+  return chr != utf8_toupper(chr);
+}
+
+static bool utf8_isupper(int32_t chr) {
   return chr != utf8_toupper(chr);
 }
 
@@ -959,20 +952,28 @@ static i32_t alloc32(size_t *offset, slab_t *slab, size_t size) {
   return (i32_t){.data = data, .size = size, .cap = size, .allocated = true};
 }
 
-static char_class char_class_of_ascii(char ch) {
-  if (ch >= 'a' && ch <= 'z') {
+static char_class char_class_of_ascii(int32_t cp) {
+  if (cp >= 'a' && cp <= 'z') {
     return char_lower;
-  } else if (ch >= 'A' && ch <= 'Z') {
+  } else if (cp >= 'A' && cp <= 'Z') {
     return char_upper;
-  } else if (ch >= '0' && ch <= '9') {
+  } else if (cp >= '0' && cp <= '9') {
     return char_number;
   }
   return char_non_word;
 }
 
-static char_class char_class_of_non_ascii(char ch) {
-  /* TODO(conni2461): char_class_of_non_ascii line 188 - 199 */
-  return 0;
+static char_class char_class_of_non_ascii(int32_t cp) {
+  if (utf8_islower(cp)) {
+    return char_lower;
+  } else if (utf8_isupper(cp)) {
+    return char_upper;
+    // } else if (utf8_isnumber(cp)) {
+    //   return char_number;
+    // } else if (utf8_isletter(cp)) {
+    //   return char_letter;
+  }
+  return char_non_word;
 }
 
 static char_class char_class_of(char ch) {
@@ -994,7 +995,7 @@ static int16_t bonus_for(char_class prev_class, char_class class) {
   return 0;
 }
 
-static int16_t bonus_at(string_t *input, size_t idx) {
+static int16_t bonus_at(utf8str_t *input, size_t idx) {
   if (idx == 0) {
     return bonus_boundary;
   }
@@ -1009,22 +1010,23 @@ static int32_t normalize_rune(int32_t r) {
   return normalize(r);
 }
 
-static int32_t try_skip(string_t *input, bool case_sensitive, byte b,
+static int32_t try_skip(utf8str_t *input, bool case_sensitive, int32_t cp,
                         int32_t from) {
-  str_slice_t slice = slice_str(input->data, (size_t)from, input->size);
-  string_t byte_array = {.data = slice.data, .size = slice.size};
-  int32_t idx = index_byte(&byte_array, b);
+  i32_slice_t slice = slice_i32(input->data, (size_t)from, input->len);
+  int32_t idx = index_byte(&slice, cp);
   if (idx == 0) {
     return from;
   }
 
-  if (!case_sensitive && b >= 'a' && b <= 'z') {
+  if (!case_sensitive && cp >= 'a' && cp <= 'z') {
     if (idx > 0) {
-      str_slice_t tmp = slice_str_right(byte_array.data, (size_t)idx);
-      byte_array.data = tmp.data;
-      byte_array.size = tmp.size;
+      // TODO(conni2461): Now in retospect i think this is just
+      // slice.size = (size_t)idx;
+      i32_slice_t tmp = slice_i32_right(slice.data, (size_t)idx);
+      slice.data = tmp.data;
+      slice.size = tmp.size;
     }
-    int32_t uidx = index_byte(&byte_array, b - (byte)32);
+    int32_t uidx = index_byte(&slice, cp - 32);
     if (uidx >= 0) {
       idx = uidx;
     }
@@ -1036,25 +1038,24 @@ static int32_t try_skip(string_t *input, bool case_sensitive, byte b,
   return from + idx;
 }
 
-static bool is_ascii(char *runes, size_t size) {
-  // TODO(conni2461): future use
-  /* for (size_t i = 0; i < size; i++) { */
-  /*   if (runes[i] >= 256) { */
-  /*     return false; */
-  /*   } */
-  /* } */
+static bool is_ascii(utf8str_t *str) {
+  for (size_t i = 0; i < str->len; i++) {
+    if (str->data[i] >= UNICODE_MAXASCII) {
+      return false;
+    }
+  }
   return true;
 }
 
-static int32_t ascii_fuzzy_index(string_t *input, char *pattern, size_t size,
+static int32_t ascii_fuzzy_index(utf8str_t *input, utf8str_t *pattern,
                                  bool case_sensitive) {
-  if (!is_ascii(pattern, size)) {
+  if (!is_ascii(pattern)) {
     return -1;
   }
 
   int32_t first_idx = 0, idx = 0;
-  for (size_t pidx = 0; pidx < size; pidx++) {
-    idx = try_skip(input, case_sensitive, pattern[pidx], idx);
+  for (size_t pidx = 0; pidx < pattern->len; pidx++) {
+    idx = try_skip(input, case_sensitive, pattern->data[pidx], idx);
     if (idx < 0) {
       return -1;
     }
@@ -1067,13 +1068,11 @@ static int32_t ascii_fuzzy_index(string_t *input, char *pattern, size_t size,
   return first_idx;
 }
 
-/* TODO(conni2461): maybe i add debugv2 maybe not */
-
 result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        string_t *input, string_t *pattern, bool with_pos,
+                        utf8str_t *input, utf8str_t *pattern, bool with_pos,
                         slab_t *slab) {
-  const size_t M = pattern->size;
-  const size_t N = input->size;
+  const size_t M = pattern->len;
+  const size_t N = input->len;
   if (M == 0) {
     return (result_t){0, 0, 0, pos_array(with_pos, M)};
   }
@@ -1084,8 +1083,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 
   size_t idx;
   {
-    int32_t tmp_idx =
-        ascii_fuzzy_index(input, pattern->data, M, case_sensitive);
+    int32_t tmp_idx = ascii_fuzzy_index(input, pattern, case_sensitive);
     if (tmp_idx < 0) {
       return (result_t){-1, -1, 0, NULL};
     }
@@ -1109,8 +1107,8 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
 
   size_t pidx = 0, last_idx = 0;
 
-  char pchar0 = pattern->data[0];
-  char pchar = pattern->data[0];
+  int32_t pchar0 = pattern->data[0];
+  int32_t pchar = pattern->data[0];
   int16_t prevH0 = 0;
   int32_t prev_class = char_non_word;
   bool in_gap = false;
@@ -1124,12 +1122,10 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
       slice_i16_right(slice_i16(B.data, idx, B.size).data, Tsub.size);
 
   for (size_t off = 0; off < Tsub.size; off++) {
-    char_class class;
-    char c = (char)Tsub.data[off];
-    class = char_class_of_ascii(c);
+    int32_t c = Tsub.data[off];
+    char_class class = char_class_of_ascii(c);
     if (!case_sensitive && class == char_upper) {
-      /* TODO(conni2461): unicode support */
-      c = (char)tolower(c);
+      c = utf8_tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
@@ -1212,8 +1208,8 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
   }
 
   i32_slice_t Fsub = slice_i32(F.data, 1, F.size);
-  str_slice_t Psub =
-      slice_str_right(slice_str(pattern->data, 1, M).data, Fsub.size);
+  i32_slice_t Psub =
+      slice_i32_right(slice_i32(pattern->data, 1, M).data, Fsub.size);
   for (size_t off = 0; off < Fsub.size; off++) {
     size_t f = (size_t)Fsub.data[off];
     pchar = Psub.data[off];
@@ -1234,10 +1230,8 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
         slice_i16(H.data, row + f - f0 - 1, H.size).data, Tsub.size);
     Hleft.data[0] = 0;
     for (size_t j = 0; j < Tsub.size; j++) {
-      char c = (char)Tsub.data[j];
       size_t col = j + f;
-      int16_t s1 = 0, s2 = 0;
-      int16_t consecutive = 0;
+      int16_t s1 = 0, s2 = 0, consecutive = 0;
 
       if (in_gap) {
         s2 = Hleft.data[j] + score_gap_extention;
@@ -1245,7 +1239,7 @@ result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
         s2 = Hleft.data[j] + score_gap_start;
       }
 
-      if (pchar == c) {
+      if (pchar == Tsub.data[j]) {
         s1 = Hdiag.data[j] + score_match;
         int16_t b = Bsub.data[j];
         consecutive = Cdiag.data[j] + 1;
@@ -1323,26 +1317,24 @@ typedef struct {
 } score_pos_tuple_t;
 
 static score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
-                                         string_t *text, string_t *pattern,
+                                         utf8str_t *text, utf8str_t *pattern,
                                          size_t sidx, size_t eidx,
                                          bool with_pos) {
-  const size_t len_pattern = pattern->size;
+  const size_t len_pattern = pattern->len;
 
   size_t pidx = 0;
-  int32_t score = 0, consecutive = 0;
+  int32_t score = 0, consecutive = 0, prev_class = char_non_word;
   bool in_gap = false;
   int16_t first_bonus = 0;
   position_t *pos = pos_array(with_pos, len_pattern);
-  int32_t prev_class = char_non_word;
   if (sidx > 0) {
     prev_class = char_class_of(text->data[sidx - 1]);
   }
   for (size_t idx = sidx; idx < eidx; idx++) {
-    char c = text->data[idx];
+    int32_t c = text->data[idx];
     int32_t class = char_class_of(c);
     if (!case_sensitive) {
-      /* TODO(conni2461): He does some unicode stuff here, investigate */
-      c = (char)tolower(c);
+      c = utf8_tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
@@ -1385,31 +1377,28 @@ static score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
 }
 
 result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        string_t *text, string_t *pattern, bool with_pos,
+                        utf8str_t *text, utf8str_t *pattern, bool with_pos,
                         slab_t *slab) {
-  const size_t len_pattern = pattern->size;
-  const size_t len_runes = text->size;
+  const size_t len_pattern = pattern->len;
+  const size_t len_runes = text->len;
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
   }
-  if (ascii_fuzzy_index(text, pattern->data, len_pattern, case_sensitive) < 0) {
+  if (ascii_fuzzy_index(text, pattern, case_sensitive) < 0) {
     return (result_t){-1, -1, 0, NULL};
   }
 
-  int32_t pidx = 0;
-  int32_t sidx = -1, eidx = -1;
+  int32_t pidx = 0, sidx = -1, eidx = -1;
   for (size_t idx = 0; idx < len_runes; idx++) {
-    char c = text->data[index_at(idx, len_runes, forward)];
+    int32_t c = text->data[index_at(idx, len_runes, forward)];
     /* TODO(conni2461): Common pattern maybe a macro would be good here */
     if (!case_sensitive) {
-      /* TODO(conni2461): He does some unicode stuff here, investigate */
-      c = (char)tolower(c);
+      c = utf8_tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
     }
-    char r = pattern->data[index_at((size_t)pidx, len_pattern, forward)];
-    if (c == r) {
+    if (c == pattern->data[index_at((size_t)pidx, len_pattern, forward)]) {
       if (sidx < 0) {
         sidx = (int32_t)idx;
       }
@@ -1426,13 +1415,9 @@ result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
     for (size_t idx = end - 1; idx >= start; idx--) {
       char c = text->data[index_at(idx, len_runes, forward)];
       if (!case_sensitive) {
-        /* TODO(conni2461): He does some unicode stuff here, investigate */
-        c = (char)tolower(c);
+        c = utf8_tolower(c);
       }
-      char r = pattern->data[index_at((size_t)pidx, len_pattern, forward)];
-      if (c == r) {
-        // TODO(conni2461): Hmmm we can do a if pidx == 0 then and make it
-        // size_t?!
+      if (c == pattern->data[index_at((size_t)pidx, len_pattern, forward)]) {
         pidx--;
         if (pidx < 0) {
           start = idx;
@@ -1453,10 +1438,10 @@ result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
 }
 
 result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
-                           string_t *text, string_t *pattern, bool with_pos,
+                           utf8str_t *text, utf8str_t *pattern, bool with_pos,
                            slab_t *slab) {
-  const size_t len_pattern = pattern->size;
-  const size_t len_runes = text->size;
+  const size_t len_pattern = pattern->len;
+  const size_t len_runes = text->len;
 
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
@@ -1464,27 +1449,24 @@ result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
   if (len_runes < len_pattern) {
     return (result_t){-1, -1, 0, NULL};
   }
-  if (ascii_fuzzy_index(text, pattern->data, len_pattern, case_sensitive) < 0) {
+  if (ascii_fuzzy_index(text, pattern, case_sensitive) < 0) {
     return (result_t){-1, -1, 0, NULL};
   }
 
   size_t pidx = 0;
   int32_t best_pos = -1;
-  int16_t bonus = 0;
-  int16_t best_bonus = -1;
+  int16_t bonus = 0, best_bonus = -1;
   for (size_t idx = 0; idx < len_runes; idx++) {
     size_t idx_ = index_at(idx, len_runes, forward);
-    char c = text->data[idx_];
+    int32_t c = text->data[idx_];
     if (!case_sensitive) {
-      /* TODO(conni2461): He does some unicode stuff here, investigate */
-      c = (char)tolower(c);
+      c = utf8_tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
     }
     size_t pidx_ = index_at(pidx, len_pattern, forward);
-    char r = pattern->data[pidx_];
-    if (r == c) {
+    if (c == pattern->data[pidx_]) {
       if (pidx_ == 0) {
         bonus = bonus_at(text, idx_);
       }
@@ -1525,9 +1507,9 @@ result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
 }
 
 result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
-                      string_t *text, string_t *pattern, bool with_pos,
+                      utf8str_t *text, utf8str_t *pattern, bool with_pos,
                       slab_t *slab) {
-  const size_t len_pattern = pattern->size;
+  const size_t len_pattern = pattern->len;
   if (len_pattern == 0) {
     return (result_t){0, 0, 0, NULL};
   }
@@ -1536,19 +1518,18 @@ result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
   if (!isspace(pattern->data[0])) {
     trimmed_len = leading_whitespaces(text);
   }
-  if (text->size - trimmed_len < len_pattern) {
+  if (text->len - trimmed_len < len_pattern) {
     return (result_t){-1, -1, 0, NULL};
   }
   for (size_t i = 0; i < len_pattern; i++) {
-    char r = pattern->data[i];
-    char c = text->data[trimmed_len + i];
+    int32_t c = text->data[trimmed_len + i];
     if (!case_sensitive) {
-      c = (char)tolower(c);
+      c = utf8_tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
     }
-    if (c != r) {
+    if (c != pattern->data[i]) {
       return (result_t){-1, -1, 0, NULL};
     }
   }
@@ -1561,11 +1542,11 @@ result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
 }
 
 result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
-                      string_t *text, string_t *pattern, bool with_pos,
+                      utf8str_t *text, utf8str_t *pattern, bool with_pos,
                       slab_t *slab) {
-  const size_t len_runes = text->size;
+  const size_t len_runes = text->len;
   size_t trimmed_len = len_runes;
-  const size_t len_pattern = pattern->size;
+  const size_t len_pattern = pattern->len;
   /* TODO(conni2461): i feel this is wrong */
   if (len_pattern == 0 || !isspace(pattern->data[len_pattern - 1])) {
     trimmed_len -= trailing_whitespaces(text);
@@ -1579,15 +1560,14 @@ result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
   }
 
   for (size_t idx = 0; idx < len_pattern; idx++) {
-    char r = pattern->data[idx];
     char c = text->data[idx + diff];
     if (!case_sensitive) {
-      c = (char)tolower(c);
+      c = utf8_tolower(c);
     }
     if (normalize) {
       c = normalize_rune(c);
     }
-    if (c != r) {
+    if (c != pattern->data[idx]) {
       return (result_t){-1, -1, 0, NULL};
     }
   }
@@ -1606,11 +1586,8 @@ result_t equal_match(bool case_sensitive, bool normalize, bool forward,
   if (len_pattern == 0) {
     return (result_t){-1, -1, 0, NULL};
   }
-
-  size_t trimmed_len = 0;
-  // size_t trimmed_len = leading_whitespaces(text);
-  size_t trimmed_end_len = 0;
-  // size_t trimmed_end_len = trailing_whitespaces(text);
+  size_t trimmed_len = leading_whitespaces(text);
+  size_t trimmed_end_len = trailing_whitespaces(text);
 
   if ((text->len - trimmed_len - trimmed_end_len) != len_pattern) {
     return (result_t){-1, -1, 0, NULL};
@@ -1682,9 +1659,7 @@ static algorithm_t get_alg(alg_types typ) {
   case term_exact: return &exact_match_naive;
   case term_prefix: return &prefix_match;
   case term_suffix: return &suffix_match;
-  default:
-    return &fuzzy_match_v2;
-    // case term_equal: return &equal_match;
+  case term_equal: return &equal_match;
   }
   return &fuzzy_match_v2;
 }
@@ -1782,9 +1757,10 @@ pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern) {
       append_set(set, (term_t){.typ = typ,
                                .alg = get_alg(typ),
                                .inv = inv,
-                               .ptr = og_str,
-                               .text = {.data = text, .size = len},
+                               // TODO(conni2461): we have the len here
+                               .text = into_utf8(text),
                                .case_sensitive = case_sensitive});
+      free(og_str);
       switch_set = true;
     } else {
       free(og_str);
@@ -1817,7 +1793,7 @@ void free_pattern(pattern_t *pattern) {
     term_set_t *term_set = pattern->ptr[i];
     for (size_t j = 0; j < term_set->size; j++) {
       term_t *term = &term_set->ptr[j];
-      free(term->ptr);
+      free_utfstr(&term->text);
     }
     free(term_set->ptr);
     free(term_set);
@@ -1827,7 +1803,7 @@ void free_pattern(pattern_t *pattern) {
 }
 
 int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
-  string_t input = {.data = text, .size = strlen(text)};
+  utf8str_t input = into_utf8(text);
 
   if (pattern->only_inv) {
     int final = 0;
@@ -1838,6 +1814,7 @@ int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
                          false, slab)
                    .score;
     }
+    free_utfstr(&input);
     return (final > 0) ? 0 : 1;
   }
 
@@ -1869,11 +1846,12 @@ int32_t get_score(char *text, pattern_t *pattern, slab_t *slab) {
     }
   }
 
+  free_utfstr(&input);
   return total_score;
 }
 
 position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab) {
-  string_t input = {.data = text, .size = strlen(text)};
+  utf8str_t input = into_utf8(text);
 
   position_t *all_pos = pos_array(true, 1);
 
@@ -1913,6 +1891,7 @@ position_t *get_positions(char *text, pattern_t *pattern, slab_t *slab) {
       break;
     }
   }
+  free_utfstr(&input);
   return all_pos;
 }
 
