@@ -1,6 +1,7 @@
 AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
 IndentCaseLabels: false
 SortIncludes: false
 ColumnLimit: 80

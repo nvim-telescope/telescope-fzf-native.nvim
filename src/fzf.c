@@ -990,16 +990,11 @@ static void append_pattern(pattern_t *pattern, term_set_t *value) {
 
 static algorithm_t get_alg(alg_types typ) {
   switch (typ) {
-  case term_fuzzy:
-    return &fuzzy_match_v2;
-  case term_exact:
-    return &exact_match_naive;
-  case term_prefix:
-    return &prefix_match;
-  case term_suffix:
-    return &suffix_match;
-  case term_equal:
-    return &equal_match;
+  case term_fuzzy: return &fuzzy_match_v2;
+  case term_exact: return &exact_match_naive;
+  case term_prefix: return &prefix_match;
+  case term_suffix: return &suffix_match;
+  case term_equal: return &equal_match;
   }
   return &fuzzy_match_v2;
 }
