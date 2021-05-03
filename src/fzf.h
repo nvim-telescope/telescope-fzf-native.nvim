@@ -19,12 +19,12 @@ typedef struct {
 } i32_t;
 
 typedef struct {
-  int32_t *data;
+  unsigned char *data;
   size_t len;
-} utf8str_t;
+  size_t ulen;
+} string_t;
 
-utf8str_t into_utf8(const char *str);
-void free_utfstr(utf8str_t *str);
+string_t init_string(char *str);
 
 typedef struct {
   size_t *data;
@@ -55,13 +55,14 @@ typedef enum {
 
 typedef enum { case_smart = 0, case_ignore, case_respect } case_types;
 
-typedef result_t (*algorithm_t)(bool, bool, bool, utf8str_t *, utf8str_t *,
-                                bool, slab_t *);
+typedef result_t (*algorithm_t)(bool, bool, string_t *, string_t *, bool,
+                                slab_t *);
 typedef struct {
   alg_types typ;
   algorithm_t alg;
   bool inv;
-  utf8str_t text;
+  char *ptr;
+  string_t text;
   bool case_sensitive;
 } term_t;
 
@@ -78,24 +79,18 @@ typedef struct {
   bool only_inv;
 } pattern_t;
 
-result_t fuzzy_match_v2(bool case_sensitive, bool normalize, bool forward,
-                        utf8str_t *text, utf8str_t *pattern, bool with_pos,
-                        slab_t *slab);
-result_t fuzzy_match_v1(bool case_sensitive, bool normalize, bool forward,
-                        utf8str_t *text, utf8str_t *pattern, bool with_pos,
-                        slab_t *slab);
-result_t exact_match_naive(bool case_sensitive, bool normalize, bool forward,
-                           utf8str_t *text, utf8str_t *pattern, bool with_pos,
-                           slab_t *slab);
-result_t prefix_match(bool case_sensitive, bool normalize, bool forward,
-                      utf8str_t *text, utf8str_t *pattern, bool with_pos,
-                      slab_t *slab);
-result_t suffix_match(bool case_sensitive, bool normalize, bool forward,
-                      utf8str_t *text, utf8str_t *pattern, bool with_pos,
-                      slab_t *slab);
-result_t equal_match(bool case_sensitive, bool normalize, bool forward,
-                     utf8str_t *text, utf8str_t *pattern, bool with_pos,
-                     slab_t *slab);
+result_t fuzzy_match_v2(bool case_sensitive, bool normalize, string_t *text,
+                        string_t *pattern, bool with_pos, slab_t *slab);
+result_t fuzzy_match_v1(bool case_sensitive, bool normalize, string_t *text,
+                        string_t *pattern, bool with_pos, slab_t *slab);
+result_t exact_match_naive(bool case_sensitive, bool normalize, string_t *text,
+                           string_t *pattern, bool with_pos, slab_t *slab);
+result_t prefix_match(bool case_sensitive, bool normalize, string_t *text,
+                      string_t *pattern, bool with_pos, slab_t *slab);
+result_t suffix_match(bool case_sensitive, bool normalize, string_t *text,
+                      string_t *pattern, bool with_pos, slab_t *slab);
+result_t equal_match(bool case_sensitive, bool normalize, string_t *text,
+                     string_t *pattern, bool with_pos, slab_t *slab);
 
 /* interface */
 pattern_t *parse_pattern(case_types case_mode, bool normalize, char *pattern);
