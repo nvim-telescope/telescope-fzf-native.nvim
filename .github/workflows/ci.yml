@@ -15,7 +15,7 @@ jobs:
             packages: libcmocka-dev
           - os: macos-10.15
             manager: brew
-            packages: cmocka gcc
+            packages: cmocka
     steps:
       - uses: actions/checkout@v2
       - name: Prepare

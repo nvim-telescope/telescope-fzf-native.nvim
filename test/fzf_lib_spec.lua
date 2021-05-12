@@ -47,6 +47,12 @@ describe("fzf", function()
     fzf.free_pattern(p)
   end)
 
+  it("can get the score for issue 11", function()
+    local p = fzf.parse_pattern("feature/1337-some-times-i-have-a-lot-of-hyphens", 0)
+    eq(1136, fzf.get_score("feature/1337-some-times-i-have-a-lot-of-hyphens", p, slab))
+    fzf.free_pattern(p)
+  end)
+
   it("can get the pos for simple pattern", function()
     local p = fzf.parse_pattern("fzf", 0)
     eq({ 7, 6, 5}, fzf.get_pos("src/fzf", p, slab))
@@ -88,6 +94,16 @@ describe("fzf", function()
     eq({4}, fzf.get_pos("src file", p, slab))
     eq({}, fzf.get_pos("src_file", p, slab))
     eq({8}, fzf.get_pos("another another file", p, slab))
+    fzf.free_pattern(p)
+  end)
+
+  it("can get the pos for issue 11", function()
+    local p = fzf.parse_pattern("feature/1337-some-times-i-have-a-lot-of-hyphens", 0)
+    local expected = {}
+    for i = 47, 1, -1 do
+      table.insert(expected, i)
+    end
+    eq(expected, fzf.get_pos("feature/1337-some-times-i-have-a-lot-of-hyphens", p, slab))
     fzf.free_pattern(p)
   end)
   fzf.free_slab(slab)
