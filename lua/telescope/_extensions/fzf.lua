@@ -22,11 +22,8 @@ local get_fzf_sorter = function(opts)
   local post_or = false
   local post_inv = false
   local post_escape = false
-  local pattern_obj = nil
 
   local get_struct = function(self, prompt)
-    if pattern_obj then return pattern_obj end
-
     local struct = self.state.prompt_cache[prompt]
     if not struct then
       struct = fzf.parse_pattern(prompt, case_mode)
@@ -35,20 +32,32 @@ local get_fzf_sorter = function(opts)
     return struct
   end
 
+  local clear_filter_fun = function(self, prompt)
+    local filter = "^(" .. self._delimiter .. "(%S+)" .. "[" .. self._delimiter .. "%s]" .. ")"
+    local matched = prompt:match(filter)
+
+    if matched == nil then
+      return prompt
+    end
+    return prompt:sub(#matched + 1, -1)
+  end
+
   return sorters.Sorter:new{
     init = function(self)
       self.state.slab = fzf.allocate_slab()
       self.state.prompt_cache = {}
+
+      if self.filter_function then
+        self.__highlight_prefilter = clear_filter_fun
+      end
     end,
     destroy = function(self)
       for _, v in pairs(self.state.prompt_cache) do
         fzf.free_pattern(v)
       end
       fzf.free_slab(self.state.slab)
-      pattern_obj = nil
     end,
     start = function(self, prompt)
-      pattern_obj = get_struct(self, prompt)
       local last = prompt:sub(-1, -1)
 
       if last == '|' then
@@ -80,9 +89,6 @@ local get_fzf_sorter = function(opts)
         post_inv = false
       end
     end,
-    finish = function()
-      pattern_obj = nil
-    end,
     discard = true,
     scoring_function = function(self, prompt, line)
       local obj = get_struct(self, prompt)
@@ -96,6 +102,9 @@ local get_fzf_sorter = function(opts)
       end
     end,
     highlighter = function(self, prompt, display)
+      if self.__highlight_prefilter then
+        prompt = self:__highlight_prefilter(prompt)
+      end
       return fzf.get_pos(display, get_struct(self, prompt), self.state.slab)
     end,
   }
