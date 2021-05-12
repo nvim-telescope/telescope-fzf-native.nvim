@@ -417,6 +417,7 @@ static void pos_wrapper(char *pattern, char **input, int **expected) {
     for (size_t j = 0; j < pos->size; j++) {
       assert_int_equal(expected[i][j], pos->data[j]);
     }
+    free_positions(pos);
     i++;
     one = input[i];
   }

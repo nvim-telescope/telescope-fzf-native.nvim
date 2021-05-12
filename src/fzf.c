@@ -207,27 +207,27 @@ static position_t *pos_array(bool with_pos, size_t len) {
   return NULL;
 }
 
-static void resize_pos(position_t *pos, size_t add_len) {
-  if (pos->size + add_len > pos->cap) {
+static void resize_pos(position_t *pos, size_t add_len, size_t comp) {
+  if (pos->size + comp > pos->cap) {
     pos->cap += add_len;
     pos->data = (size_t *)realloc(pos->data, sizeof(size_t) * pos->cap);
   }
 }
 
 static void append_pos(position_t *pos, size_t value) {
-  resize_pos(pos, pos->cap);
+  resize_pos(pos, pos->cap, 1);
   pos->data[pos->size] = value;
   pos->size++;
 }
 
 static void concat_pos(position_t *left, position_t *right) {
-  resize_pos(left, right->size);
+  resize_pos(left, right->size, right->size);
   memcpy(left->data + left->size, right->data, right->size * sizeof(size_t));
   left->size += right->size;
 }
 
 static void insert_pos(position_t *pos, size_t start, size_t end) {
-  resize_pos(pos, end - start);
+  resize_pos(pos, end - start, end - start);
   for (size_t k = start; k < end; k++) {
     pos->data[pos->size] = k;
     pos->size++;
