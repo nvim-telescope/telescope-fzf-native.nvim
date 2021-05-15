@@ -1,10 +1,8 @@
 #include "fzf.h"
 
-#include <assert.h>
-#include <math.h>
 #include <string.h>
-
 #include <ctype.h>
+#include <stdlib.h>
 
 // TODO(conni2461): UNICODE HEADER
 #define UNICODE_MAXASCII 0x7f
@@ -377,10 +375,10 @@ typedef struct {
   fzf_position_t *pos;
 } score_pos_tuple_t;
 
-static score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
-                                         fzf_string_t *text,
-                                         fzf_string_t *pattern, size_t sidx,
-                                         size_t eidx, bool with_pos) {
+static score_pos_tuple_t fzf_calculate_score(bool case_sensitive,
+                                             bool normalize, fzf_string_t *text,
+                                             fzf_string_t *pattern, size_t sidx,
+                                             size_t eidx, bool with_pos) {
   const size_t len_pattern = pattern->size;
 
   size_t pidx = 0;
@@ -439,10 +437,9 @@ static score_pos_tuple_t calculate_score(bool case_sensitive, bool normalize,
   return (score_pos_tuple_t){score, pos};
 }
 
-static fzf_result_t internal_fuzzy_match_v1(bool case_sensitive, bool normalize,
-                                            fzf_string_t *text,
-                                            fzf_string_t *pattern,
-                                            bool with_pos, fzf_slab_t *slab) {
+static fzf_result_t __fuzzy_match_v1(bool case_sensitive, bool normalize,
+                                     fzf_string_t *text, fzf_string_t *pattern,
+                                     bool with_pos, fzf_slab_t *slab) {
   const size_t len_pattern = pattern->size;
   const size_t len_runes = text->size;
   if (len_pattern == 0) {
@@ -493,7 +490,7 @@ static fzf_result_t internal_fuzzy_match_v1(bool case_sensitive, bool normalize,
       }
     }
 
-    score_pos_tuple_t tuple = calculate_score(case_sensitive, normalize, text,
+    score_pos_tuple_t tuple = fzf_calculate_score(case_sensitive, normalize, text,
                                               pattern, start, end, with_pos);
     return (fzf_result_t){(int32_t)start, (int32_t)end, tuple.score, tuple.pos};
   }
@@ -505,22 +502,21 @@ fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
                                 fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
-  return internal_fuzzy_match_v1(case_sensitive, normalize, &input_wrap,
-                                 &pattern_wrap, with_pos, slab);
+  return __fuzzy_match_v1(case_sensitive, normalize, &input_wrap, &pattern_wrap,
+                          with_pos, slab);
 }
 
-static fzf_result_t internal_fuzzy_match_v2(bool case_sensitive, bool normalize,
-                                            fzf_string_t *input,
-                                            fzf_string_t *pattern,
-                                            bool with_pos, fzf_slab_t *slab) {
+static fzf_result_t __fuzzy_match_v2(bool case_sensitive, bool normalize,
+                                     fzf_string_t *input, fzf_string_t *pattern,
+                                     bool with_pos, fzf_slab_t *slab) {
   const size_t M = pattern->size;
   const size_t N = input->size;
   if (M == 0) {
     return (fzf_result_t){0, 0, 0, pos_array(with_pos, M)};
   }
   if (slab != NULL && N * M > slab->I16.cap) {
-    return internal_fuzzy_match_v1(case_sensitive, normalize, input, pattern,
-                                   with_pos, slab);
+    return __fuzzy_match_v1(case_sensitive, normalize, input, pattern, with_pos,
+                            slab);
   }
 
   size_t idx;
@@ -761,14 +757,14 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
                                 fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
-  return internal_fuzzy_match_v2(case_sensitive, normalize, &input_wrap,
-                                 &pattern_wrap, with_pos, slab);
+  return __fuzzy_match_v2(case_sensitive, normalize, &input_wrap, &pattern_wrap,
+                          with_pos, slab);
 }
 
-static fzf_result_t
-internal_exact_match_naive(bool case_sensitive, bool normalize,
-                           fzf_string_t *text, fzf_string_t *pattern,
-                           bool with_pos, fzf_slab_t *slab) {
+static fzf_result_t __exact_match_naive(bool case_sensitive, bool normalize,
+                                        fzf_string_t *text,
+                                        fzf_string_t *pattern, bool with_pos,
+                                        fzf_slab_t *slab) {
   const size_t len_pattern = pattern->size;
   const size_t len_runes = text->size;
 
@@ -824,7 +820,7 @@ internal_exact_match_naive(bool case_sensitive, bool normalize,
     size_t bp = (size_t)best_pos;
     size_t sidx = bp - len_pattern + 1;
     size_t eidx = bp + 1;
-    int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+    int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
                                     sidx, eidx, false)
                         .score;
     return (fzf_result_t){(int32_t)sidx, (int32_t)eidx, score, NULL};
@@ -837,14 +833,13 @@ fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
                                    fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
-  return internal_exact_match_naive(case_sensitive, normalize, &input_wrap,
-                                    &pattern_wrap, with_pos, slab);
+  return __exact_match_naive(case_sensitive, normalize, &input_wrap,
+                             &pattern_wrap, with_pos, slab);
 }
 
-static fzf_result_t internal_prefix_match(bool case_sensitive, bool normalize,
-                                          fzf_string_t *text,
-                                          fzf_string_t *pattern, bool with_pos,
-                                          fzf_slab_t *slab) {
+static fzf_result_t __prefix_match(bool case_sensitive, bool normalize,
+                                   fzf_string_t *text, fzf_string_t *pattern,
+                                   bool with_pos, fzf_slab_t *slab) {
   const size_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (fzf_result_t){0, 0, 0, NULL};
@@ -871,7 +866,7 @@ static fzf_result_t internal_prefix_match(bool case_sensitive, bool normalize,
   }
   size_t start = trimmed_len;
   size_t end = trimmed_len + len_pattern;
-  int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+  int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
                                   start, end, false)
                       .score;
   return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
@@ -881,14 +876,13 @@ fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize, char *input,
                               char *pattern, bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
-  return internal_prefix_match(case_sensitive, normalize, &input_wrap,
-                               &pattern_wrap, with_pos, slab);
+  return __prefix_match(case_sensitive, normalize, &input_wrap, &pattern_wrap,
+                        with_pos, slab);
 }
 
-static fzf_result_t internal_suffix_match(bool case_sensitive, bool normalize,
-                                          fzf_string_t *text,
-                                          fzf_string_t *pattern, bool with_pos,
-                                          fzf_slab_t *slab) {
+static fzf_result_t __suffix_match(bool case_sensitive, bool normalize,
+                                   fzf_string_t *text, fzf_string_t *pattern,
+                                   bool with_pos, fzf_slab_t *slab) {
   const size_t len_runes = text->size;
   size_t trimmed_len = len_runes;
   const size_t len_pattern = pattern->size;
@@ -918,7 +912,7 @@ static fzf_result_t internal_suffix_match(bool case_sensitive, bool normalize,
   }
   size_t start = trimmed_len - len_pattern;
   size_t end = trimmed_len;
-  int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+  int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
                                   start, end, false)
                       .score;
   return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
@@ -928,14 +922,13 @@ fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize, char *input,
                               char *pattern, bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
-  return internal_suffix_match(case_sensitive, normalize, &input_wrap,
-                               &pattern_wrap, with_pos, slab);
+  return __suffix_match(case_sensitive, normalize, &input_wrap, &pattern_wrap,
+                        with_pos, slab);
 }
 
-static fzf_result_t internal_equal_match(bool case_sensitive, bool normalize,
-                                         fzf_string_t *text,
-                                         fzf_string_t *pattern, bool withPos,
-                                         fzf_slab_t *slab) {
+static fzf_result_t __equal_match(bool case_sensitive, bool normalize,
+                                  fzf_string_t *text, fzf_string_t *pattern,
+                                  bool withPos, fzf_slab_t *slab) {
   const size_t len_pattern = pattern->size;
   if (len_pattern == 0) {
     return (fzf_result_t){-1, -1, 0, NULL};
@@ -993,8 +986,8 @@ fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize, char *input,
                              char *pattern, bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
-  return internal_equal_match(case_sensitive, normalize, &input_wrap,
-                              &pattern_wrap, with_pos, slab);
+  return __equal_match(case_sensitive, normalize, &input_wrap, &pattern_wrap,
+                       with_pos, slab);
 }
 
 static void append_set(fzf_term_set_t *set, fzf_term_t value) {
@@ -1004,7 +997,6 @@ static void append_set(fzf_term_set_t *set, fzf_term_t value) {
   } else if (set->size + 1 > set->cap) {
     set->cap *= 2;
     set->ptr = realloc(set->ptr, sizeof(fzf_term_t) * set->cap);
-    assert(set->ptr != NULL);
   }
   set->ptr[set->size] = value;
   set->size++;
@@ -1018,7 +1010,6 @@ static void append_pattern(fzf_pattern_t *pattern, fzf_term_set_t *value) {
     pattern->cap *= 2;
     pattern->ptr =
         realloc(pattern->ptr, sizeof(fzf_term_set_t *) * pattern->cap);
-    assert(pattern->ptr != NULL);
   }
   pattern->ptr[pattern->size] = value;
   pattern->size++;
@@ -1029,24 +1020,23 @@ static fzf_result_t fzf_call_alg(fzf_term_t *term, bool normalize,
                                  fzf_slab_t *slab) {
   switch (term->typ) {
   case term_fuzzy:
-    return internal_fuzzy_match_v2(term->case_sensitive, normalize, input,
-                                   (fzf_string_t *)term->text, with_pos, slab);
+    return __fuzzy_match_v2(term->case_sensitive, normalize, input,
+                            (fzf_string_t *)term->text, with_pos, slab);
   case term_exact:
-    return internal_exact_match_naive(term->case_sensitive, normalize, input,
-                                      (fzf_string_t *)term->text, with_pos,
-                                      slab);
+    return __exact_match_naive(term->case_sensitive, normalize, input,
+                               (fzf_string_t *)term->text, with_pos, slab);
   case term_prefix:
-    return internal_prefix_match(term->case_sensitive, normalize, input,
-                                 (fzf_string_t *)term->text, with_pos, slab);
+    return __prefix_match(term->case_sensitive, normalize, input,
+                          (fzf_string_t *)term->text, with_pos, slab);
   case term_suffix:
-    return internal_suffix_match(term->case_sensitive, normalize, input,
-                                 (fzf_string_t *)term->text, with_pos, slab);
+    return __suffix_match(term->case_sensitive, normalize, input,
+                          (fzf_string_t *)term->text, with_pos, slab);
   case term_equal:
-    return internal_equal_match(term->case_sensitive, normalize, input,
-                                (fzf_string_t *)term->text, with_pos, slab);
+    return __equal_match(term->case_sensitive, normalize, input,
+                         (fzf_string_t *)term->text, with_pos, slab);
   }
-  return internal_fuzzy_match_v2(term->case_sensitive, normalize, input,
-                                 (fzf_string_t *)term->text, with_pos, slab);
+  return __fuzzy_match_v2(term->case_sensitive, normalize, input,
+                          (fzf_string_t *)term->text, with_pos, slab);
 }
 
 /* assumption (maybe i change that later)

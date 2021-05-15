@@ -2,8 +2,8 @@
 #define _FZF_H_
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct {
   int16_t *data;

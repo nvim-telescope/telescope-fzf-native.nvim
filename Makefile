@@ -6,13 +6,13 @@ all: build/libfzf.so
 
 build/libfzf.so: src/fzf.c src/fzf.h
 	mkdir -pv build
-	$(CC) -Ofast $(CFLAGS) -shared src/fzf.c -o build/libfzf.so
+	$(CC) -O3 $(CFLAGS) -shared src/fzf.c -o build/libfzf.so
 
 build/test: build/libfzf.so test/test.c
 	$(CC) -Og -ggdb3 $(CFLAGS) $(COVER) test/test.c -o build/test -I./src -L./build -lfzf -lcmocka
 
 build/benchmark: build/libfzf.so test/benchmark.c
-	$(CC) -Ofast $(CFLAGS) test/benchmark.c -o build/benchmark -I./src -L./build -lfzf -lcurl
+	$(CC) -O3 $(CFLAGS) test/benchmark.c -o build/benchmark -I./src -L./build -lfzf -lcurl -lm
 
 .PHONY: lint format clangdhappy clean test debug ntest benchmark
 lint:

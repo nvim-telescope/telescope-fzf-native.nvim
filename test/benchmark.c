@@ -9,6 +9,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define RUNS 1000
 
