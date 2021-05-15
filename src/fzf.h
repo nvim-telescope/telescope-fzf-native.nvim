@@ -50,7 +50,6 @@ typedef enum { case_smart = 0, case_ignore, case_respect } fzf_case_types;
 
 typedef struct {
   fzf_alg_types typ;
-  void *alg_func;
   bool inv;
   char *ptr;
   void *text;

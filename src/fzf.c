@@ -372,9 +372,6 @@ static int32_t ascii_fuzzy_index(fzf_string_t *input, char *pattern,
   return first_idx;
 }
 
-typedef fzf_result_t (*fzf_algorithm_t)(bool, bool, fzf_string_t *,
-                                        fzf_string_t *, bool, fzf_slab_t *);
-
 typedef struct {
   int32_t score;
   fzf_position_t *pos;
@@ -1027,20 +1024,29 @@ static void append_pattern(fzf_pattern_t *pattern, fzf_term_set_t *value) {
   pattern->size++;
 }
 
-static void *get_alg(fzf_alg_types typ) {
-  switch (typ) {
+static fzf_result_t fzf_call_alg(fzf_term_t *term, bool normalize,
+                                 fzf_string_t *input, bool with_pos,
+                                 fzf_slab_t *slab) {
+  switch (term->typ) {
   case term_fuzzy:
-    return &internal_fuzzy_match_v2;
+    return internal_fuzzy_match_v2(term->case_sensitive, normalize, input,
+                                   (fzf_string_t *)term->text, with_pos, slab);
   case term_exact:
-    return &internal_exact_match_naive;
+    return internal_exact_match_naive(term->case_sensitive, normalize, input,
+                                      (fzf_string_t *)term->text, with_pos,
+                                      slab);
   case term_prefix:
-    return &internal_prefix_match;
+    return internal_prefix_match(term->case_sensitive, normalize, input,
+                                 (fzf_string_t *)term->text, with_pos, slab);
   case term_suffix:
-    return &internal_suffix_match;
+    return internal_suffix_match(term->case_sensitive, normalize, input,
+                                 (fzf_string_t *)term->text, with_pos, slab);
   case term_equal:
-    return &internal_equal_match;
+    return internal_equal_match(term->case_sensitive, normalize, input,
+                                (fzf_string_t *)term->text, with_pos, slab);
   }
-  return &internal_fuzzy_match_v2;
+  return internal_fuzzy_match_v2(term->case_sensitive, normalize, input,
+                                 (fzf_string_t *)term->text, with_pos, slab);
 }
 
 /* assumption (maybe i change that later)
@@ -1138,7 +1144,6 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
       text_ptr->data = text;
       text_ptr->size = len;
       append_set(set, (fzf_term_t){.typ = typ,
-                                   .alg_func = get_alg(typ),
                                    .inv = inv,
                                    .ptr = og_str,
                                    .text = text_ptr,
@@ -1185,8 +1190,6 @@ void fzf_free_pattern(fzf_pattern_t *pattern) {
   free(pattern);
 }
 
-#define fzf_call_alg(term) ((fzf_algorithm_t)(term->alg_func))
-
 int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab) {
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
@@ -1195,9 +1198,7 @@ int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab) {
     for (size_t i = 0; i < pattern->size; i++) {
       fzf_term_set_t *term_set = pattern->ptr[i];
       fzf_term_t *term = &term_set->ptr[0];
-      final += fzf_call_alg(term)(term->case_sensitive, false, &input,
-                                  (fzf_string_t *)term->text, false, slab)
-                   .score;
+      final += fzf_call_alg(term, false, &input, false, slab).score;
     }
     return (final > 0) ? 0 : 1;
   }
@@ -1209,9 +1210,7 @@ int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab) {
     bool matched = false;
     for (size_t j = 0; j < term_set->size; j++) {
       fzf_term_t *term = &term_set->ptr[j];
-      fzf_result_t res =
-          fzf_call_alg(term)(term->case_sensitive, false, &input,
-                             (fzf_string_t *)term->text, false, slab);
+      fzf_result_t res = fzf_call_alg(term, false, &input, false, slab);
       if (res.start >= 0) {
         if (term->inv) {
           continue;
@@ -1246,9 +1245,7 @@ fzf_position_t *fzf_get_positions(char *text, fzf_pattern_t *pattern,
     bool matched = false;
     for (size_t j = 0; j < term_set->size; j++) {
       fzf_term_t *term = &term_set->ptr[j];
-      fzf_result_t res =
-          fzf_call_alg(term)(term->case_sensitive, false, &input,
-                             (fzf_string_t *)term->text, true, slab);
+      fzf_result_t res = fzf_call_alg(term, false, &input, true, slab);
       if (res.start >= 0) {
         if (term->inv) {
           fzf_free_positions(res.pos);
