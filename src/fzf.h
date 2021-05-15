@@ -20,11 +20,6 @@ typedef struct {
 } fzf_i32_t;
 
 typedef struct {
-  char *data;
-  size_t size;
-} fzf_string_t;
-
-typedef struct {
   uint32_t *data;
   size_t size;
   size_t cap;
@@ -53,14 +48,12 @@ typedef enum {
 
 typedef enum { case_smart = 0, case_ignore, case_respect } fzf_case_types;
 
-typedef fzf_result_t (*fzf_algorithm_t)(bool, bool, fzf_string_t *,
-                                        fzf_string_t *, bool, fzf_slab_t *);
 typedef struct {
   fzf_alg_types typ;
-  fzf_algorithm_t alg;
+  void *alg_func;
   bool inv;
   char *ptr;
-  fzf_string_t text;
+  void *text;
   bool case_sensitive;
 } fzf_term_t;
 
@@ -77,24 +70,19 @@ typedef struct {
   bool only_inv;
 } fzf_pattern_t;
 
-fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
-                                fzf_string_t *text, fzf_string_t *pattern,
-                                bool with_pos, fzf_slab_t *slab);
-fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
-                                fzf_string_t *text, fzf_string_t *pattern,
-                                bool with_pos, fzf_slab_t *slab);
+fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize, char *text,
+                                char *pattern, bool with_pos, fzf_slab_t *slab);
+fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize, char *text,
+                                char *pattern, bool with_pos, fzf_slab_t *slab);
 fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
-                                   fzf_string_t *text, fzf_string_t *pattern,
-                                   bool with_pos, fzf_slab_t *slab);
-fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
-                              fzf_string_t *text, fzf_string_t *pattern,
-                              bool with_pos, fzf_slab_t *slab);
-fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
-                              fzf_string_t *text, fzf_string_t *pattern,
-                              bool with_pos, fzf_slab_t *slab);
-fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
-                             fzf_string_t *text, fzf_string_t *pattern,
-                             bool with_pos, fzf_slab_t *slab);
+                                   char *text, char *pattern, bool with_pos,
+                                   fzf_slab_t *slab);
+fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize, char *text,
+                              char *pattern, bool with_pos, fzf_slab_t *slab);
+fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize, char *text,
+                              char *pattern, bool with_pos, fzf_slab_t *slab);
+fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize, char *text,
+                             char *pattern, bool with_pos, fzf_slab_t *slab);
 
 /* interface */
 fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,

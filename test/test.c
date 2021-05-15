@@ -8,13 +8,16 @@
 #include <string.h>
 #include <stdio.h>
 
+typedef struct {
+  char *data;
+  size_t size;
+} fzf_string_t;
+
 #define test_fun_type void __attribute__((unused))
 
 #define call_alg(alg, case, txt, pat, assert_block)                            \
   {                                                                            \
-    fzf_string_t text = {.data = txt, .size = strlen(txt)};                    \
-    fzf_string_t pattern = {.data = pat, .size = strlen(pat)};                 \
-    fzf_result_t res = alg(case, false, &text, &pattern, true, NULL);          \
+    fzf_result_t res = alg(case, false, txt, pat, true, NULL);                 \
     assert_block;                                                              \
     if (res.pos) {                                                             \
       free(res.pos->data);                                                     \
@@ -23,9 +26,7 @@
   }                                                                            \
   {                                                                            \
     fzf_slab_t *slab = fzf_make_default_slab();                                \
-    fzf_string_t text = {.data = txt, .size = strlen(txt)};                    \
-    fzf_string_t pattern = {.data = pat, .size = strlen(pat)};                 \
-    fzf_result_t res = alg(case, false, &text, &pattern, true, slab);          \
+    fzf_result_t res = alg(case, false, txt, pat, true, slab);                 \
     assert_block;                                                              \
     if (res.pos) {                                                             \
       free(res.pos->data);                                                     \
@@ -207,7 +208,8 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[0]->cap);
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("lua", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("lua",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
@@ -220,7 +222,8 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[0]->cap);
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("file ", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("file ",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
@@ -233,7 +236,8 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[0]->cap);
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("file with space", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("file with space",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
@@ -248,11 +252,13 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[1]->cap);
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("file ", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("file ",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
 
     assert_int_equal(term_fuzzy, pat->ptr[1]->ptr[0].typ);
-    assert_string_equal("new", pat->ptr[1]->ptr[0].text.data);
+    assert_string_equal("new",
+                        ((fzf_string_t *)(pat->ptr[1]->ptr[0].text))->data);
     assert_false(pat->ptr[1]->ptr[0].case_sensitive);
   });
 
@@ -265,7 +271,8 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[0]->cap);
 
     assert_int_equal(term_exact, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("Lua", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("Lua",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_true(pat->ptr[0]->ptr[0].case_sensitive);
     assert_true(pat->ptr[0]->ptr[0].inv);
   });
@@ -281,12 +288,14 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[1]->cap);
 
     assert_int_equal(term_exact, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("fzf", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("fzf",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
     assert_true(pat->ptr[0]->ptr[0].inv);
 
     assert_int_equal(term_exact, pat->ptr[1]->ptr[0].typ);
-    assert_string_equal("test", pat->ptr[1]->ptr[0].text.data);
+    assert_string_equal("test",
+                        ((fzf_string_t *)(pat->ptr[1]->ptr[0].text))->data);
     assert_false(pat->ptr[1]->ptr[0].case_sensitive);
     assert_true(pat->ptr[1]->ptr[0].inv);
   });
@@ -300,7 +309,8 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[0]->cap);
 
     assert_int_equal(term_fuzzy, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("Lua", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("Lua",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_true(pat->ptr[0]->ptr[0].case_sensitive);
   });
 
@@ -313,11 +323,13 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(2, pat->ptr[0]->cap);
 
     assert_int_equal(term_exact, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal("src", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal("src",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
 
     assert_int_equal(term_prefix, pat->ptr[0]->ptr[1].typ);
-    assert_string_equal("Lua", pat->ptr[0]->ptr[1].text.data);
+    assert_string_equal("Lua",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[1].text))->data);
     assert_true(pat->ptr[0]->ptr[1].case_sensitive);
   });
 
@@ -336,20 +348,24 @@ static test_fun_type test_parse_pattern(void **state) {
     assert_int_equal(1, pat->ptr[3]->cap);
 
     assert_int_equal(term_suffix, pat->ptr[0]->ptr[0].typ);
-    assert_string_equal(".lua", pat->ptr[0]->ptr[0].text.data);
+    assert_string_equal(".lua",
+                        ((fzf_string_t *)(pat->ptr[0]->ptr[0].text))->data);
     assert_false(pat->ptr[0]->ptr[0].case_sensitive);
 
     assert_int_equal(term_exact, pat->ptr[1]->ptr[0].typ);
-    assert_string_equal("previewer", pat->ptr[1]->ptr[0].text.data);
+    assert_string_equal("previewer",
+                        ((fzf_string_t *)(pat->ptr[1]->ptr[0].text))->data);
     assert_int_equal(0, pat->ptr[1]->ptr[0].case_sensitive);
 
     assert_int_equal(term_fuzzy, pat->ptr[2]->ptr[0].typ);
-    assert_string_equal("term", pat->ptr[2]->ptr[0].text.data);
+    assert_string_equal("term",
+                        ((fzf_string_t *)(pat->ptr[2]->ptr[0].text))->data);
     assert_false(pat->ptr[2]->ptr[0].case_sensitive);
     assert_true(pat->ptr[2]->ptr[0].inv);
 
     assert_int_equal(term_exact, pat->ptr[3]->ptr[0].typ);
-    assert_string_equal("asdf", pat->ptr[3]->ptr[0].text.data);
+    assert_string_equal("asdf",
+                        ((fzf_string_t *)(pat->ptr[3]->ptr[0].text))->data);
     assert_false(pat->ptr[3]->ptr[0].case_sensitive);
     assert_true(pat->ptr[3]->ptr[0].inv);
   });
