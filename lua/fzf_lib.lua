@@ -51,7 +51,6 @@ fzf.get_pos = function(input, pattern_struct, slab)
   local res = {}
   for i = 1, tonumber(pos.size) do
     res[i] = pos.data[i - 1] + 1
-    i = i + 1
   end
   native.fzf_free_positions(pos)
 
