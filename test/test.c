@@ -14,7 +14,7 @@
   {                                                                            \
     fzf_string_t text = {.data = txt, .size = strlen(txt)};                    \
     fzf_string_t pattern = {.data = pat, .size = strlen(pat)};                 \
-    fzf_result_t res = alg(case, false, true, &text, &pattern, true, NULL);    \
+    fzf_result_t res = alg(case, false, &text, &pattern, true, NULL);          \
     assert_block;                                                              \
     if (res.pos) {                                                             \
       free(res.pos->data);                                                     \
@@ -25,7 +25,7 @@
     fzf_slab_t *slab = fzf_make_default_slab();                                \
     fzf_string_t text = {.data = txt, .size = strlen(txt)};                    \
     fzf_string_t pattern = {.data = pat, .size = strlen(pat)};                 \
-    fzf_result_t res = alg(case, false, true, &text, &pattern, true, slab);    \
+    fzf_result_t res = alg(case, false, &text, &pattern, true, slab);          \
     assert_block;                                                              \
     if (res.pos) {                                                             \
       free(res.pos->data);                                                     \
