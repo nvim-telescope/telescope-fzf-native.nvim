@@ -490,8 +490,8 @@ static fzf_result_t __fuzzy_match_v1(bool case_sensitive, bool normalize,
       }
     }
 
-    score_pos_tuple_t tuple = fzf_calculate_score(case_sensitive, normalize, text,
-                                              pattern, start, end, with_pos);
+    score_pos_tuple_t tuple = fzf_calculate_score(
+        case_sensitive, normalize, text, pattern, start, end, with_pos);
     return (fzf_result_t){(int32_t)start, (int32_t)end, tuple.score, tuple.pos};
   }
   return (fzf_result_t){-1, -1, 0, NULL};
@@ -820,8 +820,8 @@ static fzf_result_t __exact_match_naive(bool case_sensitive, bool normalize,
     size_t bp = (size_t)best_pos;
     size_t sidx = bp - len_pattern + 1;
     size_t eidx = bp + 1;
-    int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
-                                    sidx, eidx, false)
+    int32_t score = fzf_calculate_score(case_sensitive, normalize, text,
+                                        pattern, sidx, eidx, false)
                         .score;
     return (fzf_result_t){(int32_t)sidx, (int32_t)eidx, score, NULL};
   }
@@ -867,7 +867,7 @@ static fzf_result_t __prefix_match(bool case_sensitive, bool normalize,
   size_t start = trimmed_len;
   size_t end = trimmed_len + len_pattern;
   int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
-                                  start, end, false)
+                                      start, end, false)
                       .score;
   return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
 }
@@ -913,7 +913,7 @@ static fzf_result_t __suffix_match(bool case_sensitive, bool normalize,
   size_t start = trimmed_len - len_pattern;
   size_t end = trimmed_len;
   int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
-                                  start, end, false)
+                                      start, end, false)
                       .score;
   return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
 }
