@@ -83,7 +83,7 @@ static min_max_t minmax(double *a) {
 }
 
 typedef struct {
-  string_t *data;
+  fzf_string_t *data;
   size_t cap;
   size_t len;
 } str_arr_t;
@@ -97,13 +97,13 @@ static void free_str_array(str_arr_t *array) {
   free(array->data);
 }
 
-static void init_string(string_t *s) {
+static void init_string(fzf_string_t *s) {
   s->size = 0;
   s->data = malloc((s->size + 1) * sizeof(char));
   s->data[0] = '\0';
 }
 
-static size_t writefunc(void *ptr, size_t size, size_t nmemb, string_t *s) {
+static size_t writefunc(void *ptr, size_t size, size_t nmemb, fzf_string_t *s) {
   size_t new_len = s->size + size * nmemb;
   s->data = realloc(s->data, new_len + 1);
 
@@ -120,7 +120,7 @@ static int get_test_file(str_arr_t *array) {
 
   curl = curl_easy_init();
   if (curl) {
-    string_t s;
+    fzf_string_t s;
     init_string(&s);
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
 
@@ -136,7 +136,7 @@ static int get_test_file(str_arr_t *array) {
     while (ptr != NULL) {
       size_t len = strlen(ptr);
       if (array->len + 1 < array->cap) {
-        string_t *new = &array->data[array->len];
+        fzf_string_t *new = &array->data[array->len];
         new->size = len;
         new->data = (char *)malloc((len + 1) * sizeof(char));
         strcpy(new->data, ptr);
@@ -155,15 +155,15 @@ static int get_test_file(str_arr_t *array) {
 int main(int argc, char *argv[]) {
   double results[RUNS];
   memset(results, 0, sizeof(results));
-  slab_t *slab = make_slab(100 * 1024, 2048);
+  fzf_slab_t *slab = fzf_make_default_slab();
 
   str_arr_t file;
   file.len = 0;
   // lets just allocate 30000 lines for now. Its not production code
   file.cap = 30000;
-  file.data = malloc(file.cap * sizeof(string_t));
+  file.data = malloc(file.cap * sizeof(fzf_string_t));
   for (size_t i = 0; i < file.cap; i++) {
-    memset(&file.data[i], 0, sizeof(string_t));
+    memset(&file.data[i], 0, sizeof(fzf_string_t));
   }
   get_test_file(&file);
 
@@ -177,11 +177,11 @@ int main(int argc, char *argv[]) {
     double start = get_time();
     for (size_t k = 0; k < patterns_size; k++) {
       char *pat_str = patterns[k];
-      pattern_t *pattern = parse_pattern(case_smart, false, pat_str);
+      fzf_pattern_t *pattern = fzf_parse_pattern(case_smart, false, pat_str);
       for (size_t j = 0; j < file.len; j++) {
-        get_score(file.data[j].data, pattern, slab);
+        fzf_get_score(file.data[j].data, pattern, slab);
       }
-      free_pattern(pattern);
+      fzf_free_pattern(pattern);
     }
     results[i] = get_time() - start;
   }
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
   printf("min: %fs , max: %fs, mean: %fs, median: %fs, std: %fs\n", mm.min,
          mm.max, mean(results), median(results), stdDeviation(results));
 
-  free_slab(slab);
+  fzf_free_slab(slab);
   free_str_array(&file);
   return 0;
 }

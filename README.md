@@ -50,21 +50,21 @@ development)
 ### C Interface
 
 ```c
-slab_t *slab = make_default_slab();
-/* case_mode enum: case_smart = 0, case_ignore, case_respect
- * normalize bool: always set to false because its not implemented yet. This
- *                 is reserved for future use
- * pattern char* : pattern you want to match. e.g. "src | lua !.c$
+fzf_slab_t *slab = fzf_make_default_slab();
+/* fzf_case_mode enum : case_smart = 0, case_ignore, case_respect
+ * normalize bool     : always set to false because its not implemented yet.
+ *                      This is reserved for future use
+ * pattern char*      : pattern you want to match. e.g. "src | lua !.c$
  */
-pattern_t *pattern = parse_pattern(case_smart, false, "src | lua !.c$");
+fzf_pattern_t *pattern = fzf_parse_pattern(case_smart, false, "src | lua !.c$");
 
 /* you can get the score/position for as many items as you want */
-int score = get_score(line, pattern, slab);
-position_t *pos = get_positions(line, pattern, slab);
+int score = fzf_get_score(line, pattern, slab);
+fzf_position_t *pos = fzf_get_positions(line, pattern, slab);
 
-free_positions(pos);
-free_pattern(pattern);
-free_slab(slab);
+fzf_free_positions(pos);
+fzf_free_pattern(pattern);
+fzf_free_slab(slab);
 ```
 
 ### Lua Interface
