@@ -193,7 +193,7 @@ static test_fun_type test_equal_match(void **state) {
 
 #define test_pat(case, str, test_block)                                        \
   {                                                                            \
-    fzf_pattern_t *pat = fzf_parse_pattern(case, false, str);                  \
+    fzf_pattern_t *pat = fzf_parse_pattern(case, false, str, true);            \
     test_block;                                                                \
     fzf_free_pattern(pat);                                                     \
   }
@@ -373,7 +373,7 @@ static test_fun_type test_parse_pattern(void **state) {
 
 static void score_wrapper(char *pattern, char **input, int *expected) {
   fzf_slab_t *slab = fzf_make_default_slab();
-  fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, pattern);
+  fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, pattern, true);
   int i = 0;
   char *one = input[i];
   while (one != NULL) {
@@ -425,7 +425,7 @@ static test_fun_type score_integration(void **state) {
 
 static void pos_wrapper(char *pattern, char **input, int **expected) {
   fzf_slab_t *slab = fzf_make_default_slab();
-  fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, pattern);
+  fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, pattern, true);
   int i = 0;
   char *one = input[i];
   while (one != NULL) {

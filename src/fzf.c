@@ -1040,12 +1040,11 @@ static fzf_result_t fzf_call_alg(fzf_term_t *term, bool normalize,
 }
 
 /* assumption (maybe i change that later)
- * - bool fuzzy always true
  * - always v2 alg
  * - bool extended always true (thats the whole point of this isn't it)
  */
 fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
-                                 char *pattern) {
+                                 char *pattern, bool fuzzy) {
   size_t pat_len = strlen(pattern);
   pattern = trim_left(pattern, &pat_len, ' ');
   while (has_suffix(pattern, pat_len, " ", 1) &&
@@ -1082,6 +1081,9 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
     } else {
       free(lower_text);
     }
+    if (!fuzzy) {
+      typ = term_exact;
+    }
     if (set->size > 0 && !after_bar && strcmp(text, "|") == 0) {
       switch_set = false;
       after_bar = true;
@@ -1104,7 +1106,7 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
     }
 
     if (has_prefix(text, "'", 1)) {
-      if (!inv) { // usually if fuzzy && but we assume always fuzzy
+      if (fuzzy && !inv) {
         typ = term_exact;
         text++;
         len--;
