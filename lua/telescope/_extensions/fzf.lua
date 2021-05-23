@@ -19,7 +19,7 @@ local case_enum = setmetatable({
 
 local get_fzf_sorter = function(opts)
   local case_mode = case_enum[opts.case_mode]
-  local fuzzy_mode = opts.fuzzy == nil and opts.fuzzy
+  local fuzzy_mode = opts.fuzzy == nil and true or opts.fuzzy
   local post_or = false
   local post_inv = false
   local post_escape = false
@@ -117,13 +117,13 @@ return require('telescope').register_extension {
     local override_generic = if_nil(ext_config.override_generic_sorter, true)
 
     local opts = {}
-    if ext_config.case_mode then
+    if ext_config.case_mode ~= nil then
       opts.case_mode = ext_config.case_mode
     else
       opts.case_mode = "smart_case"
     end
 
-    if ext_config.fuzzy then
+    if ext_config.fuzzy ~= nil then
       opts.fuzzy = ext_config.fuzzy
     else
       opts.fuzzy = true

@@ -59,7 +59,7 @@ end
 
 fzf.parse_pattern = function(pattern, case_mode, fuzzy)
   case_mode = case_mode == nil and 0 or case_mode
-  fuzzy = fuzzy == nil and true
+  fuzzy = fuzzy == nil and true or fuzzy
   local c_str = ffi.new("char[?]", #pattern + 1)
   ffi.copy(c_str, pattern)
   return native.fzf_parse_pattern(case_mode, false, c_str, fuzzy)
