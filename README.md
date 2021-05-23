@@ -26,6 +26,7 @@ use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
 require('telescope').setup {
   extensions = {
     fzf = {
+      fuzzy = true,                    -- false will only do exact matching
       override_generic_sorter = false, -- override the generic sorter
       override_file_sorter = true,     -- override the file sorter
       case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
@@ -55,8 +56,9 @@ fzf_slab_t *slab = fzf_make_default_slab();
  * normalize bool     : always set to false because its not implemented yet.
  *                      This is reserved for future use
  * pattern char*      : pattern you want to match. e.g. "src | lua !.c$
+ * fuzzy bool         : enable or disable fuzzy matching
  */
-fzf_pattern_t *pattern = fzf_parse_pattern(case_smart, false, "src | lua !.c$");
+fzf_pattern_t *pattern = fzf_parse_pattern(case_smart, false, "src | lua !.c$", true);
 
 /* you can get the score/position for as many items as you want */
 int score = fzf_get_score(line, pattern, slab);
@@ -75,7 +77,8 @@ local fzf = require('fzf_lib')
 local slab = fzf.allocate_slab()
 -- pattern: string
 -- case_mode: number with 0 = smart_case, 1 = ignore_case, 2 = respect_case
-local pattern_obj = fzf.parse_pattern(pattern, case_mode)
+-- fuzzy: enable or disable fuzzy matching. default true
+local pattern_obj = fzf.parse_pattern(pattern, case_mode, fuzzy)
 
 -- you can get the score/position for as many items as you want
 -- line: string

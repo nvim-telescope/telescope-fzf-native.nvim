@@ -85,7 +85,7 @@ fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize, char *text,
 
 /* interface */
 fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
-                                 char *pattern);
+                                 char *pattern, bool fuzzy);
 void fzf_free_pattern(fzf_pattern_t *pattern);
 
 int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);

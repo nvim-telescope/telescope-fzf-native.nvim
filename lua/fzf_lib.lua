@@ -29,7 +29,7 @@ ffi.cdef[[
   void fzf_free_positions(fzf_position_t *pos);
   int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
 
-  fzf_pattern_t *fzf_parse_pattern(int32_t case_mode, bool normalize, char *pattern);
+  fzf_pattern_t *fzf_parse_pattern(int32_t case_mode, bool normalize, char *pattern, bool fuzzy);
   void fzf_free_pattern(fzf_pattern_t *pattern);
 
   fzf_slab_t *fzf_make_default_slab(void);
@@ -57,11 +57,12 @@ fzf.get_pos = function(input, pattern_struct, slab)
   return res
 end
 
-fzf.parse_pattern = function(pattern, case_mode)
+fzf.parse_pattern = function(pattern, case_mode, fuzzy)
   case_mode = case_mode == nil and 0 or case_mode
+  fuzzy = fuzzy == nil and true
   local c_str = ffi.new("char[?]", #pattern + 1)
   ffi.copy(c_str, pattern)
-  return native.fzf_parse_pattern(case_mode, false, c_str)
+  return native.fzf_parse_pattern(case_mode, false, c_str, fuzzy)
 end
 
 fzf.free_pattern = function(p)

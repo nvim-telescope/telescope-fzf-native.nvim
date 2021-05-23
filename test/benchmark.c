@@ -183,7 +183,8 @@ int main(int argc, char *argv[]) {
     double start = get_time();
     for (size_t k = 0; k < patterns_size; k++) {
       char *pat_str = patterns[k];
-      fzf_pattern_t *pattern = fzf_parse_pattern(case_smart, false, pat_str);
+      fzf_pattern_t *pattern =
+          fzf_parse_pattern(case_smart, false, pat_str, true);
       for (size_t j = 0; j < file.len; j++) {
         fzf_get_score(file.data[j].data, pattern, slab);
       }
