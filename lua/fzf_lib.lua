@@ -25,9 +25,9 @@ ffi.cdef[[
     size_t cap;
   } fzf_position_t;
 
-  fzf_position_t *fzf_get_positions(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
+  fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
   void fzf_free_positions(fzf_position_t *pos);
-  int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
+  int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
 
   fzf_pattern_t *fzf_parse_pattern(int32_t case_mode, bool normalize, char *pattern, bool fuzzy);
   void fzf_free_pattern(fzf_pattern_t *pattern);
@@ -39,15 +39,11 @@ ffi.cdef[[
 local fzf = {}
 
 fzf.get_score = function(input, pattern_struct, slab)
-  local text = ffi.new("char[?]", #input + 1)
-  ffi.copy(text, input)
-  return native.fzf_get_score(text, pattern_struct, slab)
+  return native.fzf_get_score(input, pattern_struct, slab)
 end
 
 fzf.get_pos = function(input, pattern_struct, slab)
-  local text = ffi.new("char[?]", #input + 1)
-  ffi.copy(text, input)
-  local pos = native.fzf_get_positions(text, pattern_struct, slab)
+  local pos = native.fzf_get_positions(input, pattern_struct, slab)
   local res = {}
   for i = 1, tonumber(pos.size) do
     res[i] = pos.data[i - 1] + 1

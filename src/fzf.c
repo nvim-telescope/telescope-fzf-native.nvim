@@ -36,7 +36,7 @@
 
 gen_slice(i16, int16_t);
 gen_simple_slice(i32, int32_t);
-gen_slice(str, char);
+gen_slice(str, const char);
 #undef gen_slice
 #undef gen_simple_slice
 
@@ -64,7 +64,7 @@ typedef enum {
 } char_types;
 
 typedef struct {
-  char *data;
+  const char *data;
   size_t size;
 } fzf_string_t;
 
@@ -124,16 +124,18 @@ static char *trim_left(char *str, size_t *len, char trim) {
   return str;
 }
 
-static bool has_prefix(char *str, char *prefix, size_t prefix_len) {
+static bool has_prefix(const char *str, const char *prefix, size_t prefix_len) {
   return strncmp(prefix, str, prefix_len) == 0;
 }
 
-static bool has_suffix(char *str, size_t len, char *suffix, size_t suffix_len) {
+static bool has_suffix(const char *str, size_t len, const char *suffix,
+                       size_t suffix_len) {
   return len >= suffix_len &&
          strncmp(slice_str(str, len - suffix_len, len).data, suffix,
                  suffix_len) == 0;
 }
 
+// TODO(conni2461): REFACTOR
 static char *str_replace(char *orig, char *rep, char *with) {
   char *result, *ins, *tmp;
   size_t len_rep, len_with, len_front, count;
@@ -173,6 +175,7 @@ static char *str_replace(char *orig, char *rep, char *with) {
   return result;
 }
 
+// TODO(conni2461): REFACTOR
 static char *str_tolower(char *str, size_t size) {
   char *lower_str = (char *)malloc((size + 1) * sizeof(char));
   for (size_t i = 0; i < size; i++) {
@@ -339,7 +342,7 @@ static int32_t try_skip(fzf_string_t *input, bool case_sensitive, byte b,
   return from + idx;
 }
 
-static bool is_ascii(char *runes, size_t size) {
+static bool is_ascii(const char *runes, size_t size) {
   // TODO(conni2461): future use
   /* for (size_t i = 0; i < size; i++) { */
   /*   if (runes[i] >= 256) { */
@@ -349,7 +352,7 @@ static bool is_ascii(char *runes, size_t size) {
   return true;
 }
 
-static int32_t ascii_fuzzy_index(fzf_string_t *input, char *pattern,
+static int32_t ascii_fuzzy_index(fzf_string_t *input, const char *pattern,
                                  size_t size, bool case_sensitive) {
   if (!is_ascii(pattern, size)) {
     return -1;
@@ -498,8 +501,8 @@ static fzf_result_t __fuzzy_match_v1(bool case_sensitive, bool normalize,
 }
 
 fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
-                                char *input, char *pattern, bool with_pos,
-                                fzf_slab_t *slab) {
+                                const char *input, const char *pattern,
+                                bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
   return __fuzzy_match_v1(case_sensitive, normalize, &input_wrap, &pattern_wrap,
@@ -753,8 +756,8 @@ static fzf_result_t __fuzzy_match_v2(bool case_sensitive, bool normalize,
 }
 
 fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
-                                char *input, char *pattern, bool with_pos,
-                                fzf_slab_t *slab) {
+                                const char *input, const char *pattern,
+                                bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
   return __fuzzy_match_v2(case_sensitive, normalize, &input_wrap, &pattern_wrap,
@@ -829,8 +832,8 @@ static fzf_result_t __exact_match_naive(bool case_sensitive, bool normalize,
 }
 
 fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
-                                   char *input, char *pattern, bool with_pos,
-                                   fzf_slab_t *slab) {
+                                   const char *input, const char *pattern,
+                                   bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
   return __exact_match_naive(case_sensitive, normalize, &input_wrap,
@@ -872,8 +875,9 @@ static fzf_result_t __prefix_match(bool case_sensitive, bool normalize,
   return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
 }
 
-fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize, char *input,
-                              char *pattern, bool with_pos, fzf_slab_t *slab) {
+fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
+                              const char *input, const char *pattern,
+                              bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
   return __prefix_match(case_sensitive, normalize, &input_wrap, &pattern_wrap,
@@ -918,8 +922,9 @@ static fzf_result_t __suffix_match(bool case_sensitive, bool normalize,
   return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
 }
 
-fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize, char *input,
-                              char *pattern, bool with_pos, fzf_slab_t *slab) {
+fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
+                              const char *input, const char *pattern,
+                              bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
   return __suffix_match(case_sensitive, normalize, &input_wrap, &pattern_wrap,
@@ -944,10 +949,9 @@ static fzf_result_t __equal_match(bool case_sensitive, bool normalize,
   bool match = true;
   if (normalize) {
     // TODO(conni2461): to rune
-    char *runes = text->data;
     for (size_t idx = 0; idx < len_pattern; idx++) {
       char pchar = pattern->data[idx];
-      char c = runes[trimmed_len + idx];
+      char c = text->data[trimmed_len + idx];
       if (!case_sensitive) {
         c = (char)tolower(c);
       }
@@ -958,11 +962,9 @@ static fzf_result_t __equal_match(bool case_sensitive, bool normalize,
     }
   } else {
     // TODO(conni2461): to rune
-    char *runes = text->data;
-
     for (size_t idx = 0; idx < len_pattern; idx++) {
       char pchar = pattern->data[idx];
-      char c = runes[trimmed_len + idx];
+      char c = text->data[trimmed_len + idx];
       if (!case_sensitive) {
         c = (char)tolower(c);
       }
@@ -982,8 +984,9 @@ static fzf_result_t __equal_match(bool case_sensitive, bool normalize,
   return (fzf_result_t){-1, -1, 0, NULL};
 }
 
-fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize, char *input,
-                             char *pattern, bool with_pos, fzf_slab_t *slab) {
+fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
+                             const char *input, const char *pattern,
+                             bool with_pos, fzf_slab_t *slab) {
   fzf_string_t input_wrap = {.data = input, .size = strlen(input)};
   fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};
   return __equal_match(case_sensitive, normalize, &input_wrap, &pattern_wrap,
@@ -1039,6 +1042,7 @@ static fzf_result_t fzf_call_alg(fzf_term_t *term, bool normalize,
                           (fzf_string_t *)term->text, with_pos, slab);
 }
 
+// TODO(conni2461): REFACTOR
 /* assumption (maybe i change that later)
  * - always v2 alg
  * - bool extended always true (thats the whole point of this isn't it)
@@ -1182,7 +1186,8 @@ void fzf_free_pattern(fzf_pattern_t *pattern) {
   free(pattern);
 }
 
-int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab) {
+int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
+                      fzf_slab_t *slab) {
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
   if (pattern->only_inv) {
@@ -1225,7 +1230,7 @@ int32_t fzf_get_score(char *text, fzf_pattern_t *pattern, fzf_slab_t *slab) {
   return total_score;
 }
 
-fzf_position_t *fzf_get_positions(char *text, fzf_pattern_t *pattern,
+fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
                                   fzf_slab_t *slab) {
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
