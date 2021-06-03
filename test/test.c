@@ -10,7 +10,7 @@
 
 typedef struct {
   char *data;
-  size_t size;
+  size_t len;
 } fzf_string_t;
 
 #define test_fun_type void __attribute__((unused))
