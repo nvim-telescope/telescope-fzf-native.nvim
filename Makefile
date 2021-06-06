@@ -1,11 +1,10 @@
-CC=gcc
 CFLAGS=-Wall -Werror -fpic
 COVER=#--coverage
 
 all: build/libfzf.so
 
 build/libfzf.so: src/fzf.c src/fzf.h
-	mkdir -pv build
+	mkdir -p build
 	$(CC) -O3 $(CFLAGS) -shared src/fzf.c -o build/libfzf.so
 
 build/test: build/libfzf.so test/test.c
