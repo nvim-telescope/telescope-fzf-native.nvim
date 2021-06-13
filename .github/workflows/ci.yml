@@ -24,10 +24,10 @@ jobs:
           ${{ matrix.manager }} install ${{ matrix.packages }}
           gcc --version
       - name: Build
-        run: make CC=gcc
-
+        run: CC=/usr/bin/gcc make
       - name: Tests
-        run: make test CC=gcc
+        run: CC=/usr/bin/gcc make test
+
   clang:
     name: clang
     runs-on: ${{ matrix.os }}
@@ -49,10 +49,18 @@ jobs:
           ${{ matrix.manager }} install ${{ matrix.packages }}
           clang --version
       - name: Build
-        run: make CC=clang
-
+        run: CC=/usr/bin/clang make
       - name: Tests
-        run: make test CC=clang
+        run: CC=/usr/bin/clang make test
+
+  windows:
+    name: windows
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: make
+
   nvim-tests:
     name: nvim-tests
     runs-on: ${{ matrix.os }}
@@ -84,7 +92,6 @@ jobs:
           ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
       - name: Build
         run: make
-
       - name: Tests
         run: |
           export PATH="${PWD}/_neovim/bin:${PATH}"

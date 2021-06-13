@@ -23,11 +23,17 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-
-      - name: Prepare
+      - name: Prepare clang-format
         run: |
           sudo apt-get update
           sudo apt-get install clang-format
-
+      - name: Prepare stylua
+        run: |
+          curl -sLJO https://github.com/JohnnyMorganz/StyLua/releases/download/v0.9.0/stylua-0.9.0-linux.zip
+          unzip stylua-0.9.0-linux.zip
+          rm stylua-0.9.0-linux.zip
+          chmod +x stylua
       - name: Format
-        run: make format
+        run: |
+          export PATH="${PWD}:${PATH}"
+          make format
