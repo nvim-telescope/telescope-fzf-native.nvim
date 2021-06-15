@@ -2,9 +2,11 @@ CFLAGS = -Wall -Werror -fpic
 COVERAGE ?=
 
 ifeq ($(OS),Windows_NT)
+    RM = cmd //C rmdir //Q //S
     CC = gcc
     TARGET := libfzf.dll
 else
+    RM = rm -rf
     TARGET := libfzf.so
 endif
 
@@ -45,4 +47,4 @@ clangdhappy:
 	compiledb make
 
 clean:
-	rm -rf build
+	$(RM) build
