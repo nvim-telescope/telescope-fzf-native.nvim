@@ -37,10 +37,10 @@ debug:
 	$(CC) -Og -ggdb3 $(CFLAGS) $(COVERAGE) -shared src/fzf.c -o build/$(TARGET)
 
 test: build/test
-	@LD_LIBRARY_PATH=${PWD}/build:${LD_LIBRARY_PATH} ./build/test
+	LD_LIBRARY_PATH=${PWD}/build:${LD_LIBRARY_PATH} ./build/test
 
 benchmark: build/benchmark
-	@LD_LIBRARY_PATH=${PWD}/build:${LD_LIBRARY_PATH} ./build/benchmark
+	LD_LIBRARY_PATH=${PWD}/build:${LD_LIBRARY_PATH} ./build/benchmark
 
 ntest:
 	nvim --headless --noplugin -u test/minrc.vim -c "PlenaryBustedDirectory test/ { minimal_init = './test/minrc.vim' }"

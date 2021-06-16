@@ -85,7 +85,7 @@ static min_max_t minmax(double *a) {
 
 typedef struct {
   char *data;
-  size_t size;
+  size_t len;
 } fzf_string_t;
 
 typedef struct {
@@ -104,18 +104,18 @@ static void free_str_array(str_arr_t *array) {
 }
 
 static void init_string(fzf_string_t *s) {
-  s->size = 0;
-  s->data = malloc((s->size + 1) * sizeof(char));
+  s->len = 0;
+  s->data = malloc((s->len + 1) * sizeof(char));
   s->data[0] = '\0';
 }
 
 static size_t writefunc(void *ptr, size_t size, size_t nmemb, fzf_string_t *s) {
-  size_t new_len = s->size + size * nmemb;
+  size_t new_len = s->len + size * nmemb;
   s->data = realloc(s->data, new_len + 1);
 
-  memcpy(s->data + s->size, ptr, size * nmemb);
+  memcpy(s->data + s->len, ptr, size * nmemb);
   s->data[new_len] = '\0';
-  s->size = new_len;
+  s->len = new_len;
 
   return size * nmemb;
 }
@@ -143,7 +143,7 @@ static int get_test_file(str_arr_t *array) {
       size_t len = strlen(ptr);
       if (array->len + 1 < array->cap) {
         fzf_string_t *new = &array->data[array->len];
-        new->size = len;
+        new->len = len;
         new->data = (char *)malloc((len + 1) * sizeof(char));
         strcpy(new->data, ptr);
         new->data[len] = '\0';
