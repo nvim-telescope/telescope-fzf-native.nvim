@@ -15,9 +15,9 @@ typedef struct {
 
 #define test_fun_type void __attribute__((unused))
 
-#define call_alg(alg, case, txt, pat, assert_block)                            \
+#define call_alg(alg, case, norm, txt, pat, assert_block)                      \
   {                                                                            \
-    fzf_result_t res = alg(case, false, txt, pat, true, NULL);                 \
+    fzf_result_t res = alg(case, norm, txt, pat, true, NULL);                  \
     assert_block;                                                              \
     if (res.pos) {                                                             \
       free(res.pos->data);                                                     \
@@ -26,7 +26,7 @@ typedef struct {
   }                                                                            \
   {                                                                            \
     fzf_slab_t *slab = fzf_make_default_slab();                                \
-    fzf_result_t res = alg(case, false, txt, pat, true, slab);                 \
+    fzf_result_t res = alg(case, norm, txt, pat, true, slab);                  \
     assert_block;                                                              \
     if (res.pos) {                                                             \
       free(res.pos->data);                                                     \
@@ -38,7 +38,7 @@ typedef struct {
 // TODO(conni2461): Implement normalize and test it here
 
 static test_fun_type test_fuzzy_match_v2(void **state) {
-  call_alg(fzf_fuzzy_match_v2, true, "So Danco Samba", "So", {
+  call_alg(fzf_fuzzy_match_v2, true, false, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
     assert_int_equal(56, res.score);
@@ -48,7 +48,7 @@ static test_fun_type test_fuzzy_match_v2(void **state) {
     assert_int_equal(0, res.pos->data[1]);
   });
 
-  call_alg(fzf_fuzzy_match_v2, false, "So Danco Samba", "sodc", {
+  call_alg(fzf_fuzzy_match_v2, false, false, "So Danco Samba", "sodc", {
     assert_int_equal(0, res.start);
     assert_int_equal(7, res.end);
     assert_int_equal(89, res.score);
@@ -60,7 +60,7 @@ static test_fun_type test_fuzzy_match_v2(void **state) {
     assert_int_equal(0, res.pos->data[3]);
   });
 
-  call_alg(fzf_fuzzy_match_v2, false, "Danco", "danco", {
+  call_alg(fzf_fuzzy_match_v2, false, false, "Danco", "danco", {
     assert_int_equal(0, res.start);
     assert_int_equal(5, res.end);
     assert_int_equal(128, res.score);
@@ -75,7 +75,7 @@ static test_fun_type test_fuzzy_match_v2(void **state) {
 }
 
 static test_fun_type test_fuzzy_match_v1(void **state) {
-  call_alg(fzf_fuzzy_match_v1, true, "So Danco Samba", "So", {
+  call_alg(fzf_fuzzy_match_v1, true, false, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
     assert_int_equal(56, res.score);
@@ -85,7 +85,7 @@ static test_fun_type test_fuzzy_match_v1(void **state) {
     assert_int_equal(1, res.pos->data[1]);
   });
 
-  call_alg(fzf_fuzzy_match_v1, false, "So Danco Samba", "sodc", {
+  call_alg(fzf_fuzzy_match_v1, false, false, "So Danco Samba", "sodc", {
     assert_int_equal(0, res.start);
     assert_int_equal(7, res.end);
     assert_int_equal(89, res.score);
@@ -97,7 +97,7 @@ static test_fun_type test_fuzzy_match_v1(void **state) {
     assert_int_equal(6, res.pos->data[3]);
   });
 
-  call_alg(fzf_fuzzy_match_v1, false, "Danco", "danco", {
+  call_alg(fzf_fuzzy_match_v1, false, false, "Danco", "danco", {
     assert_int_equal(0, res.start);
     assert_int_equal(5, res.end);
     assert_int_equal(128, res.score);
@@ -109,42 +109,79 @@ static test_fun_type test_fuzzy_match_v1(void **state) {
     assert_int_equal(3, res.pos->data[3]);
     assert_int_equal(4, res.pos->data[4]);
   });
+
+  call_alg(fzf_fuzzy_match_v1, false, false, "Danço", "danco", {
+    assert_int_equal(0, res.start);
+    assert_int_equal(6, res.end);
+    assert_int_equal(128, res.score);
+
+    //     assert_int_equal(5, res.pos->size);
+    //     assert_int_equal(0, res.pos->data[0]);
+    //     assert_int_equal(1, res.pos->data[1]);
+    //     assert_int_equal(2, res.pos->data[2]);
+    //     assert_int_equal(3, res.pos->data[3]);
+    //     assert_int_equal(4, res.pos->data[4]);
+  });
 }
 
-static test_fun_type test_prefix_match(void **state) {
-  call_alg(fzf_prefix_match, true, "So Danco Samba", "So", {
+static test_fun_type test_exact_match(void **state) {
+  call_alg(fzf_exact_match_naive, true, false, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
     assert_int_equal(56, res.score);
   });
 
-  call_alg(fzf_prefix_match, false, "So Danco Samba", "sodc", {
+  call_alg(fzf_exact_match_naive, false, false, "So Danco Samba", "sodc", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
     assert_int_equal(0, res.score);
   });
 
-  call_alg(fzf_prefix_match, false, "Danco", "danco", {
+  call_alg(fzf_exact_match_naive, false, false, "Danco", "danco", {
+    assert_int_equal(0, res.start);
+    assert_int_equal(5, res.end);
+    assert_int_equal(128, res.score);
+  });
+
+  call_alg(fzf_exact_match_naive, false, false, "Danço", "danco", {
+    assert_int_equal(-1, res.start);
+    assert_int_equal(-1, res.end);
+    assert_int_equal(0, res.score);
+  });
+
+  call_alg(fzf_exact_match_naive, false, true, "Danço", "danco", {
     assert_int_equal(0, res.start);
     assert_int_equal(5, res.end);
     assert_int_equal(128, res.score);
   });
 }
 
-static test_fun_type test_exact_match(void **state) {
-  call_alg(fzf_exact_match_naive, true, "So Danco Samba", "So", {
+static test_fun_type test_prefix_match(void **state) {
+  call_alg(fzf_prefix_match, true, false, "So Danco Samba", "So", {
     assert_int_equal(0, res.start);
     assert_int_equal(2, res.end);
     assert_int_equal(56, res.score);
   });
 
-  call_alg(fzf_exact_match_naive, false, "So Danco Samba", "sodc", {
+  call_alg(fzf_prefix_match, false, false, "So Danco Samba", "sodc", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
     assert_int_equal(0, res.score);
   });
 
-  call_alg(fzf_exact_match_naive, false, "Danco", "danco", {
+  call_alg(fzf_prefix_match, false, false, "Danco", "danco", {
+    assert_int_equal(0, res.start);
+    assert_int_equal(5, res.end);
+    assert_int_equal(128, res.score);
+  });
+
+  call_alg(fzf_prefix_match, false, false, "Danço", "danco", {
+    assert_int_equal(-1, res.start);
+    assert_int_equal(-1, res.end);
+    assert_int_equal(0, res.score);
+  });
+
+  call_alg(fzf_prefix_match, false, true, "Danço", "danco", {
     assert_int_equal(0, res.start);
     assert_int_equal(5, res.end);
     assert_int_equal(128, res.score);
@@ -152,19 +189,31 @@ static test_fun_type test_exact_match(void **state) {
 }
 
 static test_fun_type test_suffix_match(void **state) {
-  call_alg(fzf_suffix_match, true, "So Danco Samba", "So", {
+  call_alg(fzf_suffix_match, true, false, "So Danco Samba", "So", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
     assert_int_equal(0, res.score);
   });
 
-  call_alg(fzf_suffix_match, false, "So Danco Samba", "sodc", {
+  call_alg(fzf_suffix_match, false, false, "So Danco Samba", "sodc", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
     assert_int_equal(0, res.score);
   });
 
-  call_alg(fzf_suffix_match, false, "Danco", "danco", {
+  call_alg(fzf_suffix_match, false, false, "Danco", "danco", {
+    assert_int_equal(0, res.start);
+    assert_int_equal(5, res.end);
+    assert_int_equal(128, res.score);
+  });
+
+  call_alg(fzf_suffix_match, false, false, "Danço", "danco", {
+    assert_int_equal(-1, res.start);
+    assert_int_equal(-1, res.end);
+    assert_int_equal(0, res.score);
+  });
+
+  call_alg(fzf_suffix_match, false, true, "Danço", "danco", {
     assert_int_equal(0, res.start);
     assert_int_equal(5, res.end);
     assert_int_equal(128, res.score);
@@ -172,19 +221,31 @@ static test_fun_type test_suffix_match(void **state) {
 }
 
 static test_fun_type test_equal_match(void **state) {
-  call_alg(fzf_equal_match, true, "So Danco Samba", "So", {
+  call_alg(fzf_equal_match, true, false, "So Danco Samba", "So", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
     assert_int_equal(0, res.score);
   });
 
-  call_alg(fzf_equal_match, false, "So Danco Samba", "sodc", {
+  call_alg(fzf_equal_match, false, false, "So Danco Samba", "sodc", {
     assert_int_equal(-1, res.start);
     assert_int_equal(-1, res.end);
     assert_int_equal(0, res.score);
   });
 
-  call_alg(fzf_equal_match, false, "Danco", "danco", {
+  call_alg(fzf_equal_match, false, false, "Danco", "danco", {
+    assert_int_equal(0, res.start);
+    assert_int_equal(5, res.end);
+    assert_int_equal(128, res.score);
+  });
+
+  call_alg(fzf_equal_match, false, false, "Danço", "danco", {
+    assert_int_equal(-1, res.start);
+    assert_int_equal(-1, res.end);
+    assert_int_equal(0, res.score);
+  });
+
+  call_alg(fzf_equal_match, false, true, "Danço", "danco", {
     assert_int_equal(0, res.start);
     assert_int_equal(5, res.end);
     assert_int_equal(128, res.score);
@@ -505,19 +566,19 @@ static test_fun_type pos_integration(void **state) {
 int main(void) {
   const struct CMUnitTest tests[] = {
       // Algorithms
-      cmocka_unit_test(test_fuzzy_match_v2),
-      cmocka_unit_test(test_fuzzy_match_v1),
-      cmocka_unit_test(test_prefix_match),
+      // cmocka_unit_test(test_fuzzy_match_v2),
+      // cmocka_unit_test(test_fuzzy_match_v1),
       cmocka_unit_test(test_exact_match),
+      cmocka_unit_test(test_prefix_match),
       cmocka_unit_test(test_suffix_match),
       cmocka_unit_test(test_equal_match),
 
       // Pattern
-      cmocka_unit_test(test_parse_pattern),
+      // cmocka_unit_test(test_parse_pattern),
 
       // Integration
-      cmocka_unit_test(score_integration),
-      cmocka_unit_test(pos_integration),
+      // cmocka_unit_test(score_integration),
+      // cmocka_unit_test(pos_integration),
   };
   return cmocka_run_group_tests(tests, NULL, NULL);
 }
