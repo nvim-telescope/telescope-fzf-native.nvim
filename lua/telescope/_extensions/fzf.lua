@@ -1,10 +1,5 @@
-local if_nil = function(x, y)
-  if x == nil then return y end
-  return x
-end
-
-local fzf = require('fzf_lib')
-local sorters = require('telescope.sorters')
+local fzf = require "fzf_lib"
+local sorters = require "telescope.sorters"
 
 local case_enum = setmetatable({
   ["smart_case"] = 0,
@@ -14,7 +9,9 @@ local case_enum = setmetatable({
   __index = function(_, k)
     error(string.format("%s is not a valid case mode", k))
   end,
-  __newindex = function() error("Don't set new things") end
+  __newindex = function()
+    error "Don't set new things"
+  end,
 })
 
 local get_fzf_sorter = function(opts)
@@ -43,7 +40,7 @@ local get_fzf_sorter = function(opts)
     return prompt:sub(#matched + 1, -1)
   end
 
-  return sorters.Sorter:new{
+  return sorters.Sorter:new {
     init = function(self)
       self.state.slab = fzf.allocate_slab()
       self.state.prompt_cache = {}
@@ -61,7 +58,7 @@ local get_fzf_sorter = function(opts)
     start = function(self, prompt)
       local last = prompt:sub(-1, -1)
 
-      if last == '|' then
+      if last == "|" then
         self._discard_state.filtered = {}
         post_or = true
       elseif last == " " and post_or then
@@ -73,7 +70,7 @@ local get_fzf_sorter = function(opts)
         post_or = false
       end
 
-      if last == '\\' and not post_escape then
+      if last == "\\" and not post_escape then
         self._discard_state.filtered = {}
         post_escape = true
       else
@@ -81,7 +78,7 @@ local get_fzf_sorter = function(opts)
         post_escape = false
       end
 
-      if last == '!' and not post_inv then
+      if last == "!" and not post_inv then
         post_inv = true
         self._discard_state.filtered = {}
       elseif post_inv then
@@ -93,7 +90,9 @@ local get_fzf_sorter = function(opts)
     discard = true,
     scoring_function = function(self, prompt, line)
       local obj = get_struct(self, prompt)
-      if obj.size == 0 then return 1 end
+      if obj.size == 0 then
+        return 1
+      end
 
       local score = fzf.get_score(line, obj, self.state.slab)
       if score == 0 then
@@ -111,10 +110,10 @@ local get_fzf_sorter = function(opts)
   }
 end
 
-return require('telescope').register_extension {
+return require("telescope").register_extension {
   setup = function(ext_config, config)
-    local override_file = if_nil(ext_config.override_file_sorter, true)
-    local override_generic = if_nil(ext_config.override_generic_sorter, true)
+    local override_file = vim.F.if_nil(ext_config.override_file_sorter, true)
+    local override_generic = vim.F.if_nil(ext_config.override_generic_sorter, true)
 
     local opts = {}
     if ext_config.case_mode ~= nil then
@@ -144,6 +143,6 @@ return require('telescope').register_extension {
   exports = {
     native_fzf_sorter = function(opts)
       return get_fzf_sorter(opts or { case_mode = "smart_case", fuzzy = true })
-    end
-  }
+    end,
+  },
 }
