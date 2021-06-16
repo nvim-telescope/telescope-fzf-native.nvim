@@ -2,10 +2,12 @@ CFLAGS = -Wall -Werror -fpic
 COVERAGE ?=
 
 ifeq ($(OS),Windows_NT)
-    RM = cmd //C rmdir //Q //S
+    MKD = -mkdir
+    RM = cmd /C rmdir /Q /S
     CC = gcc
     TARGET := libfzf.dll
 else
+    MKD = mkdir -p
     RM = rm -rf
     TARGET := libfzf.so
 endif
@@ -13,7 +15,7 @@ endif
 all: build/$(TARGET)
 
 build/$(TARGET): src/fzf.c src/fzf.h
-	@mkdir -p build
+	$(MKD) build
 	$(CC) -O3 $(CFLAGS) -shared src/fzf.c -o build/$(TARGET)
 
 build/test: build/$(TARGET) test/test.c
@@ -31,7 +33,7 @@ format:
 	stylua --color always -c --glob "**/*.lua" -- lua
 
 debug:
-	@mkdir -p build
+	$(MKD) build
 	$(CC) -Og -ggdb3 $(CFLAGS) $(COVERAGE) -shared src/fzf.c -o build/$(TARGET)
 
 test: build/test
