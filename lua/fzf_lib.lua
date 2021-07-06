@@ -49,7 +49,7 @@ end
 
 fzf.get_pos = function(input, pattern_struct, slab)
   local pos = native.fzf_get_positions(input, pattern_struct, slab)
-       local res = {}
+  local res = {}
   for i = 1, tonumber(pos.size) do
     res[i] = pos.data[i - 1] + 1
   end
