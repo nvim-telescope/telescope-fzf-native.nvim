@@ -19,7 +19,7 @@ build/$(TARGET): src/fzf.c src/fzf.h
 	$(CC) -O3 $(CFLAGS) -shared src/fzf.c -o build/$(TARGET)
 
 build/test: build/$(TARGET) test/test.c
-	$(CC) -Og -ggdb3 $(CFLAGS) $(COVERAGE) test/test.c -o build/test -I./src -L./build -lfzf -lcmocka
+	$(CC) -Og -ggdb3 $(CFLAGS) $(COVERAGE) test/test.c -o build/test -I./src -L./build -lfzf -lexaminer
 
 build/benchmark: build/$(TARGET) test/benchmark.c
 	$(CC) -O3 $(CFLAGS) test/benchmark.c -o build/benchmark -I./src -L./build -lfzf -lcurl -lm
@@ -30,7 +30,6 @@ lint:
 
 format:
 	clang-format --style=file --dry-run -Werror src/fzf.c src/fzf.h test/test.c test/benchmark.c
-	stylua --color always -c --glob "**/*.lua" -- lua
 
 debug:
 	$(MKD) build
