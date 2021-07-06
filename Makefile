@@ -30,7 +30,6 @@ lint:
 
 format:
 	clang-format --style=file --dry-run -Werror src/fzf.c src/fzf.h test/test.c test/benchmark.c
-	stylua --color always -c --glob "**/*.lua" -- lua
 
 debug:
 	$(MKD) build
