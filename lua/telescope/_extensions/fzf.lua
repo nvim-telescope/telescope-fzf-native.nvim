@@ -110,33 +110,31 @@ local get_fzf_sorter = function(opts)
   }
 end
 
+local fast_extend = function(opts, conf)
+  local ret = {}
+  ret.case_mode = vim.F.if_nil(opts.case_mode, conf.case_mode)
+  ret.fuzzy = vim.F.if_nil(opts.fuzzy, conf.fuzzy)
+  return ret
+end
+
 return require("telescope").register_extension {
   setup = function(ext_config, config)
     local override_file = vim.F.if_nil(ext_config.override_file_sorter, true)
     local override_generic = vim.F.if_nil(ext_config.override_generic_sorter, true)
 
-    local opts = {}
-    if ext_config.case_mode ~= nil then
-      opts.case_mode = ext_config.case_mode
-    else
-      opts.case_mode = "smart_case"
-    end
-
-    if ext_config.fuzzy ~= nil then
-      opts.fuzzy = ext_config.fuzzy
-    else
-      opts.fuzzy = true
-    end
+    local conf = {}
+    conf.case_mode = vim.F.if_nil(ext_config.case_mode, "smart_case")
+    conf.fuzzy = vim.F.if_nil(ext_config.fuzzy, true)
 
     if override_file then
-      config.file_sorter = function()
-        return get_fzf_sorter(opts)
+      config.file_sorter = function(opts)
+        return get_fzf_sorter(fast_extend(opts, conf))
       end
     end
 
     if override_generic then
-      config.generic_sorter = function()
-        return get_fzf_sorter(opts)
+      config.generic_sorter = function(opts)
+        return get_fzf_sorter(fast_extend(opts, conf))
       end
     end
   end,
