@@ -128,12 +128,14 @@ return require("telescope").register_extension {
 
     if override_file then
       config.file_sorter = function(opts)
+        opts = opts or {}
         return get_fzf_sorter(fast_extend(opts, conf))
       end
     end
 
     if override_generic then
       config.generic_sorter = function(opts)
+        opts = opts or {}
         return get_fzf_sorter(fast_extend(opts, conf))
       end
     end
