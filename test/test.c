@@ -661,7 +661,13 @@ static void pos_wrapper(char *pattern, char **input, int **expected) {
   fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, pattern, true);
   for (size_t i = 0; input[i] != NULL; ++i) {
     fzf_position_t *pos = fzf_get_positions(input[i], pat, slab);
-    ASSERT_EQ_MEM(expected[i], pos->data, pos->size);
+    // Verify that the size is correct
+    if (expected[i]) {
+      ASSERT_EQ(-1, expected[i][pos->size]);
+    } else {
+      ASSERT_EQ(0, pos->size);
+    }
+    ASSERT_EQ_MEM(expected[i], pos->data, pos->size * sizeof(pos->data[0]));
     fzf_free_positions(pos);
   }
   fzf_free_pattern(pat);
@@ -672,44 +678,44 @@ TEST(pos_integration, simple) {
   char *input[] = {"src/fzf.c",       "src/fzf.h",
                    "lua/fzf_lib.lua", "lua/telescope/_extensions/fzf.lua",
                    "README.md",       NULL};
-  int match1[] = {6, 5, 4};
-  int match2[] = {6, 5, 4};
-  int match3[] = {6, 5, 4};
-  int match4[] = {28, 27, 26};
+  int match1[] = {6, 5, 4, -1};
+  int match2[] = {6, 5, 4, -1};
+  int match3[] = {6, 5, 4, -1};
+  int match4[] = {28, 27, 26, -1};
   int *expected[] = {match1, match2, match3, match4, NULL};
   pos_wrapper("fzf", input, expected);
 }
 
 TEST(pos_integration, invert) {
   char *input[] = {"fzf", "main.c", "src/fzf", "fz/noooo", NULL};
-  int *expected[] = {};
+  int *expected[] = {NULL, NULL, NULL, NULL, NULL};
   pos_wrapper("!fzf", input, expected);
 }
 
 TEST(pos_integration, and_with_second_invert) {
   char *input[] = {"src/fzf.c", "lua/fzf_lib.lua", "build/libfzf", NULL};
-  int match1[] = {6, 5, 4};
+  int match1[] = {6, 5, 4, -1};
   int *expected[] = {match1, NULL, NULL};
   pos_wrapper("fzf !lib", input, expected);
 }
 
 TEST(pos_integration, and_all_invert) {
   char *input[] = {"src/fzf.c", "README.md", "lua/asdf", "test/test.c", NULL};
-  int *expected[] = {};
+  int *expected[] = {NULL, NULL, NULL, NULL};
   pos_wrapper("!fzf !test", input, expected);
 }
 
 TEST(pos_integration, with_escaped_space) {
   char *input[] = {"file ", "file lua", "lua", NULL};
-  int match1[] = {7, 6, 5, 4, 3, 2, 1, 0};
+  int match1[] = {7, 6, 5, 4, 3, 2, 1, 0, -1};
   int *expected[] = {NULL, match1, NULL};
   pos_wrapper("file\\ lua", input, expected);
 }
 
 TEST(pos_integration, only_escaped_space) {
   char *input[] = {"file with space", "lul lua", "lua", "src", "test", NULL};
-  int match1[] = {4};
-  int match2[] = {3};
+  int match1[] = {4, -1};
+  int match2[] = {3, -1};
   int *expected[] = {match1, match2, NULL, NULL, NULL};
   pos_wrapper("\\ ", input, expected);
 }
@@ -717,8 +723,8 @@ TEST(pos_integration, only_escaped_space) {
 TEST(pos_integration, simple_or) {
   char *input[] = {"src/fzf.h",       "README.md",       "build/fzf",
                    "lua/fzf_lib.lua", "Lua/fzf_lib.lua", NULL};
-  int match1[] = {0, 1, 2};
-  int match2[] = {0, 1, 2};
+  int match1[] = {0, 1, 2, -1};
+  int match2[] = {0, 1, 2, -1};
   int *expected[] = {match1, NULL, NULL, NULL, match2};
   pos_wrapper("'src | ^Lua", input, expected);
 }
@@ -727,8 +733,8 @@ TEST(pos_integration, complex_term) {
   char *input[] = {"lua/random_previewer", "README.md",
                    "previewers/utils.lua", "previewers/buffer.lua",
                    "previewers/term.lua",  NULL};
-  int match1[] = {16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8};
-  int match2[] = {17, 18, 19, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+  int match1[] = {16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, -1};
+  int match2[] = {17, 18, 19, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, -1};
   int *expected[] = {NULL, NULL, match1, match2, NULL};
   pos_wrapper(".lua$ 'previewer !'term", input, expected);
 }
