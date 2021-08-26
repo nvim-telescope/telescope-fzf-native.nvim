@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -fpic
+CFLAGS = -Wall -Werror -fpic -std=gnu99
 COVERAGE ?=
 
 ifeq ($(OS),Windows_NT)
