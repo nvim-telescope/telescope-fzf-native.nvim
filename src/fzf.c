@@ -607,7 +607,7 @@ static fzf_result_t __fuzzy_match_v2(bool case_sensitive, bool normalize,
         H0sub.data[off] = max16(prevH0 + score_gap_start, 0);
       }
       C0sub.data[off] = 0;
-      in_gap = false;
+      in_gap = true;
     }
     prevH0 = H0sub.data[off];
   }
@@ -713,9 +713,9 @@ static fzf_result_t __fuzzy_match_v2(bool case_sensitive, bool normalize,
   }
 
   fzf_position_t *pos = pos_array(with_pos, M);
+  size_t j = max_score_pos;
   if (with_pos) {
     size_t i = M - 1;
-    size_t j = max_score_pos;
     bool prefer_match = true;
     for (;;) {
       size_t I = i * width;
@@ -751,7 +751,7 @@ static fzf_result_t __fuzzy_match_v2(bool case_sensitive, bool normalize,
   free_alloc(B);
   free_alloc(C0);
   free_alloc(H0);
-  return (fzf_result_t){(int32_t)f0, (int32_t)max_score_pos + 1,
+  return (fzf_result_t){(int32_t)j, (int32_t)max_score_pos + 1,
                         (int32_t)max_score, pos};
 }
 
