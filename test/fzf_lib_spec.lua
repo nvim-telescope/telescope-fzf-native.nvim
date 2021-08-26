@@ -7,7 +7,7 @@ describe("fzf", function()
     local p = fzf.parse_pattern("fzf", 0)
     eq(80, fzf.get_score("src/fzf", p, slab))
     eq(0, fzf.get_score("asdf", p, slab))
-    eq(50, fzf.get_score("fasdzasdf", p, slab))
+    eq(54, fzf.get_score("fasdzasdf", p, slab))
     fzf.free_pattern(p)
   end)
 
