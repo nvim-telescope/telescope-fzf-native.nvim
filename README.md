@@ -3,6 +3,10 @@
 **fzf-native** is a `c` port of **[fzf][fzf]**. It only covers the algorithm and
 implements few functions to support calculating the score.
 
+This means that the [fzf syntax](https://github.com/junegunn/fzf#search-syntax).
+This is an advantage over the more simpler `fzy` algorithm, which is also
+available for telescope (as native component or as lua component).
+
 ## Installation
 
 To get **fzf-native** working, you need to run make at the root directory. As of
@@ -23,11 +27,13 @@ use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
 ## Telescope Setup and Configuration:
 
 ```lua
+-- You dont need to set any of these options. These are the default ones. Only
+-- the loading is important
 require('telescope').setup {
   extensions = {
     fzf = {
       fuzzy = true,                    -- false will only do exact matching
-      override_generic_sorter = false, -- override the generic sorter
+      override_generic_sorter = true,  -- override the generic sorter
       override_file_sorter = true,     -- override the file sorter
       case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
                                        -- the default case_mode is "smart_case"
@@ -44,9 +50,6 @@ require('telescope').load_extension('fzf')
 This section is only addressed towards developers who plan to use the library
 (c or lua bindings).
 This section is not addressed towards users of the telescope extension.
-
-(**Disclaimer**: Interface is not yet stable. The library is still in
-development)
 
 ### C Interface
 
@@ -94,25 +97,24 @@ fzf.free_slab(slab)
 
 ## Disclaimer
 
-This project is work in progress and might not be complete compared to
-**[fzf][fzf]**. But i think we are at a pretty usable state already.
-
-Another point to mention is that, this will not compare 1:1 with
-**[fzf][fzf]**, because telescope handles the sorting, this extension is
-only handling the calculation of the score. This means that the order of items
-with the same score might be different in telescope compared to **[fzf][fzf]**.
-
-Example for this behaivor is this pattern in this repository: `src | lua`.
-All files that match this pattern have the same score which results in a
-slightly different order for telescope compared to **[fzf][fzf]**.
+This projects implements **[fzf][fzf]** algorithm in c. So there might be
+differences in matching. I don't guarantee completeness.
 
 ### TODO
 
-Stuff still missing that is present in fzf.
+Stuff still missing that is present in **[fzf][fzf]**.
 
 - [ ] normalize
 - [ ] case for unicode (i don't think this works currently)
-- [ ] and probably more
+
+## Benchmark
+
+Comparison with fzy-native and fzy-lua with a table containing 240201 file
+strings. It calculated the score and position (if score > 0) for each of these
+strings with the pattern that is listed below:
+
+![benchmark 1](https://raw.githubusercontent.com/wiki/nvim-telescope/telescope.nvim/imgs/bench1.png)
+![benchmark 2](https://raw.githubusercontent.com/wiki/nvim-telescope/telescope.nvim/imgs/bench2.png)
 
 ## Credit
 
