@@ -80,7 +80,7 @@ static int32_t index_byte(fzf_string_t *string, char b) {
 static size_t leading_whitespaces(fzf_string_t *str) {
   size_t whitespaces = 0;
   for (size_t i = 0; i < str->size; i++) {
-    if (!isspace(str->data[i])) {
+    if (!isspace((unsigned char)str->data[i])) {
       break;
     }
     whitespaces++;
@@ -91,7 +91,7 @@ static size_t leading_whitespaces(fzf_string_t *str) {
 static size_t trailing_whitespaces(fzf_string_t *str) {
   size_t whitespaces = 0;
   for (size_t i = str->size - 1; i >= 0; i--) {
-    if (!isspace(str->data[i])) {
+    if (!isspace((unsigned char)str->data[i])) {
       break;
     }
     whitespaces++;
@@ -849,7 +849,7 @@ static fzf_result_t __prefix_match(bool case_sensitive, bool normalize,
   }
   size_t trimmed_len = 0;
   /* TODO(conni2461): i feel this is wrong */
-  if (!isspace(pattern->data[0])) {
+  if (!isspace((unsigned char)pattern->data[0])) {
     trimmed_len = leading_whitespaces(text);
   }
   if (text->size - trimmed_len < len_pattern) {
@@ -891,7 +891,8 @@ static fzf_result_t __suffix_match(bool case_sensitive, bool normalize,
   size_t trimmed_len = len_runes;
   const size_t len_pattern = pattern->size;
   /* TODO(conni2461): i feel this is wrong */
-  if (len_pattern == 0 || !isspace(pattern->data[len_pattern - 1])) {
+  if (len_pattern == 0 ||
+      !isspace((unsigned char)pattern->data[len_pattern - 1])) {
     trimmed_len -= trailing_whitespaces(text);
   }
   if (len_pattern == 0) {
