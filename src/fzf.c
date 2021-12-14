@@ -1048,7 +1048,7 @@ static fzf_result_t fzf_call_alg(fzf_term_t *term, bool normalize,
  * - always v2 alg
  * - bool extended always true (thats the whole point of this isn't it)
  */
-fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
+DLLEXPORT fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
                                  char *pattern, bool fuzzy) {
   size_t pat_len = strlen(pattern);
   pattern = trim_left(pattern, &pat_len, ' ');
@@ -1172,7 +1172,7 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
   return pat_obj;
 }
 
-void fzf_free_pattern(fzf_pattern_t *pattern) {
+DLLEXPORT void fzf_free_pattern(fzf_pattern_t *pattern) {
   for (size_t i = 0; i < pattern->size; i++) {
     fzf_term_set_t *term_set = pattern->ptr[i];
     for (size_t j = 0; j < term_set->size; j++) {
@@ -1187,7 +1187,7 @@ void fzf_free_pattern(fzf_pattern_t *pattern) {
   free(pattern);
 }
 
-int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
+DLLEXPORT int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
                       fzf_slab_t *slab) {
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
@@ -1231,7 +1231,7 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
   return total_score;
 }
 
-fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
+DLLEXPORT fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
                                   fzf_slab_t *slab) {
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
@@ -1275,7 +1275,7 @@ fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
   return all_pos;
 }
 
-void fzf_free_positions(fzf_position_t *pos) {
+DLLEXPORT void fzf_free_positions(fzf_position_t *pos) {
   if (pos) {
     if (pos->data) {
       free(pos->data);
@@ -1284,7 +1284,7 @@ void fzf_free_positions(fzf_position_t *pos) {
   }
 }
 
-fzf_slab_t *fzf_make_slab(size_t size_16, size_t size_32) {
+DLLEXPORT fzf_slab_t *fzf_make_slab(size_t size_16, size_t size_32) {
   fzf_slab_t *slab = (fzf_slab_t *)malloc(sizeof(fzf_slab_t));
   memset(slab, 0, sizeof(*slab));
 
@@ -1303,11 +1303,11 @@ fzf_slab_t *fzf_make_slab(size_t size_16, size_t size_32) {
   return slab;
 }
 
-fzf_slab_t *fzf_make_default_slab(void) {
+DLLEXPORT fzf_slab_t *fzf_make_default_slab(void) {
   return fzf_make_slab(100 * 1024, 2048);
 }
 
-void fzf_free_slab(fzf_slab_t *slab) {
+DLLEXPORT void fzf_free_slab(fzf_slab_t *slab) {
   if (slab) {
     free(slab->I16.data);
     free(slab->I32.data);

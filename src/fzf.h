@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef _WIN32
+    #define DLLEXPORT __declspec(dllexport)
+#else
+    #define DLLEXPORT
+#endif
+
 typedef struct {
   int16_t *data;
   size_t size;
@@ -89,18 +95,18 @@ fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
                              bool with_pos, fzf_slab_t *slab);
 
 /* interface */
-fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
+DLLEXPORT fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
                                  char *pattern, bool fuzzy);
-void fzf_free_pattern(fzf_pattern_t *pattern);
+DLLEXPORT void fzf_free_pattern(fzf_pattern_t *pattern);
 
-int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
+DLLEXPORT int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
                       fzf_slab_t *slab);
-fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
+DLLEXPORT fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
                                   fzf_slab_t *slab);
-void fzf_free_positions(fzf_position_t *pos);
+DLLEXPORT void fzf_free_positions(fzf_position_t *pos);
 
-fzf_slab_t *fzf_make_slab(size_t size_16, size_t size_32);
-fzf_slab_t *fzf_make_default_slab(void);
-void fzf_free_slab(fzf_slab_t *slab);
+DLLEXPORT fzf_slab_t *fzf_make_slab(size_t size_16, size_t size_32);
+DLLEXPORT fzf_slab_t *fzf_make_default_slab(void);
+DLLEXPORT void fzf_free_slab(fzf_slab_t *slab);
 
 #endif // _fzf_H_
