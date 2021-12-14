@@ -45,6 +45,10 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: make
+      - name: Archive latest windows build
+        uses: actions/upload-artifact@v2
+        with:
+          path: build/libfzf.dll
 
   nvim-tests:
     name: nvim-tests
