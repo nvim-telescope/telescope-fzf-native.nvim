@@ -11,4 +11,4 @@ src/x64/Release
 src/fzf.lib
 src/fzf.pdb
 src/fzf.exp
-src/fzf.dll
+src/libfzf.dll
