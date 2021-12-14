@@ -8,7 +8,3 @@ src/Debug
 src/Release
 src/x64/Debug
 src/x64/Release
-src/fzf.lib
-src/fzf.pdb
-src/fzf.exp
-src/libfzf.dll
