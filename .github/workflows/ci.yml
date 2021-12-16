@@ -43,8 +43,17 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
+      - uses: lukka/get-cmake@latest
       - name: Build
-        run: make
+        run: |
+          mkdir build
+          cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+          cmake --install build --prefix build
+      - name: Archive latest Windows build
+        uses: actions/upload-artifact@v2
+        with:
+          path: build/libfzf.dll
 
   nvim-tests:
     name: nvim-tests

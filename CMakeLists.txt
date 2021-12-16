@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(fzf C)
+
+set(CMAKE_INSTALL_PREFIX ".")
 
 if (MSVC)
     set(CMAKE_SHARED_LIBRARY_PREFIX lib)
@@ -14,5 +16,7 @@ endif()
 # To build the library:
 #   $ mkdir build && cd build
 #   $ cmake .. -DCMAKE_BUILD_TYPE=Release
-#   $ cmake --build .
+#   $ cmake --build . --config Release
 add_library(fzf SHARED src/fzf.c src/fzf.h)
+
+install(TARGETS fzf DESTINATION ${CMAKE_BINARY_DIR})
