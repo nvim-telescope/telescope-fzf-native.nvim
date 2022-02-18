@@ -90,10 +90,6 @@ local get_fzf_sorter = function(opts)
     discard = true,
     scoring_function = function(self, prompt, line)
       local obj = get_struct(self, prompt)
-      if obj.size == 0 then
-        return 1
-      end
-
       local score = fzf.get_score(line, obj, self.state.slab)
       if score == 0 then
         return -1

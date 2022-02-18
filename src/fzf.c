@@ -1200,6 +1200,12 @@ void fzf_free_pattern(fzf_pattern_t *pattern) {
 
 int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
                       fzf_slab_t *slab) {
+  // If the pattern is an empty string then pattern->ptr will be NULL and we
+  // basically don't want to filter. Return 1 for telescope
+  if (pattern->ptr == NULL) {
+    return 1;
+  }
+
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
   if (pattern->only_inv) {
@@ -1244,6 +1250,12 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
 
 fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
                                   fzf_slab_t *slab) {
+  // If the pattern is an empty string then pattern->ptr will be NULL and we
+  // basically don't want to filter. Return 1 for telescope
+  if (pattern->ptr == NULL) {
+    return NULL;
+  }
+
   fzf_string_t input = {.data = text, .size = strlen(text)};
 
   fzf_position_t *all_pos = pos_array(true, 1);
