@@ -7,6 +7,11 @@
 // TODO(conni2461): UNICODE HEADER
 #define UNICODE_MAXASCII 0x7f
 
+#define SFREE(x)                                                               \
+  if (x) {                                                                     \
+    free(x);                                                                   \
+  }
+
 /* Helpers */
 #define free_alloc(obj)                                                        \
   if (obj.allocated) {                                                         \
@@ -1050,7 +1055,13 @@ static fzf_result_t fzf_call_alg(fzf_term_t *term, bool normalize,
  */
 fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
                                  char *pattern, bool fuzzy) {
+  fzf_pattern_t *pat_obj = (fzf_pattern_t *)malloc(sizeof(fzf_pattern_t));
+  memset(pat_obj, 0, sizeof(*pat_obj));
+
   size_t pat_len = strlen(pattern);
+  if (pat_len == 0) {
+    return pat_obj;
+  }
   pattern = trim_left(pattern, &pat_len, ' ');
   while (has_suffix(pattern, pat_len, " ", 1) &&
          !has_suffix(pattern, pat_len, "\\ ", 2)) {
@@ -1063,8 +1074,6 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
   const char *delim = " ";
   char *ptr = strtok(pattern_copy, delim);
 
-  fzf_pattern_t *pat_obj = (fzf_pattern_t *)malloc(sizeof(fzf_pattern_t));
-  memset(pat_obj, 0, sizeof(*pat_obj));
   fzf_term_set_t *set = (fzf_term_set_t *)malloc(sizeof(fzf_term_set_t));
   memset(set, 0, sizeof(*set));
 
@@ -1080,11 +1089,11 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
     bool case_sensitive = case_mode == case_respect ||
                           (case_mode == case_smart && strcmp(text, lower_text));
     if (!case_sensitive) {
-      free(text);
+      SFREE(text);
       text = lower_text;
       og_str = lower_text;
     } else {
-      free(lower_text);
+      SFREE(lower_text);
     }
     if (!fuzzy) {
       typ = term_exact;
@@ -1093,7 +1102,7 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
       switch_set = false;
       after_bar = true;
       ptr = strtok(NULL, delim);
-      free(og_str);
+      SFREE(og_str);
       continue;
     }
     after_bar = false;
@@ -1147,7 +1156,7 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
                                    .case_sensitive = case_sensitive});
       switch_set = true;
     } else {
-      free(og_str);
+      SFREE(og_str);
     }
 
     ptr = strtok(NULL, delim);
@@ -1168,23 +1177,25 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
     }
   }
   pat_obj->only_inv = only;
-  free(pattern_copy);
+  SFREE(pattern_copy);
   return pat_obj;
 }
 
 void fzf_free_pattern(fzf_pattern_t *pattern) {
-  for (size_t i = 0; i < pattern->size; i++) {
-    fzf_term_set_t *term_set = pattern->ptr[i];
-    for (size_t j = 0; j < term_set->size; j++) {
-      fzf_term_t *term = &term_set->ptr[j];
-      free(term->ptr);
-      free(term->text);
+  if (pattern->ptr) {
+    for (size_t i = 0; i < pattern->size; i++) {
+      fzf_term_set_t *term_set = pattern->ptr[i];
+      for (size_t j = 0; j < term_set->size; j++) {
+        fzf_term_t *term = &term_set->ptr[j];
+        free(term->ptr);
+        free(term->text);
+      }
+      free(term_set->ptr);
+      free(term_set);
     }
-    free(term_set->ptr);
-    free(term_set);
+    free(pattern->ptr);
   }
-  free(pattern->ptr);
-  free(pattern);
+  SFREE(pattern);
 }
 
 int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
@@ -1267,7 +1278,7 @@ fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
         }
       }
     } else {
-      free(all_pos->data);
+      SFREE(all_pos->data);
       memset(all_pos, 0, sizeof(*all_pos));
       break;
     }
@@ -1277,9 +1288,7 @@ fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
 
 void fzf_free_positions(fzf_position_t *pos) {
   if (pos) {
-    if (pos->data) {
-      free(pos->data);
-    }
+    SFREE(pos->data);
     free(pos);
   }
 }
