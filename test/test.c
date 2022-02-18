@@ -428,6 +428,15 @@ TEST(equal_match, case3) {
   });
 }
 
+TEST(pattern_parsing, empty) {
+  fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, "", true);
+  ASSERT_EQ(0, pat->size);
+  ASSERT_EQ(0, pat->cap);
+  ASSERT_FALSE(pat->only_inv);
+
+  fzf_free_pattern(pat);
+}
+
 TEST(pattern_parsing, simple) {
   fzf_pattern_t *pat = fzf_parse_pattern(case_smart, false, "lua", true);
   ASSERT_EQ(1, pat->size);
