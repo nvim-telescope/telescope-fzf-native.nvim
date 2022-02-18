@@ -199,7 +199,7 @@ static size_t min64u(size_t a, size_t b) {
 }
 
 static fzf_position_t *pos_array(bool with_pos, size_t len) {
-  if (with_pos) {
+  if (with_pos && len > 0) {
     fzf_position_t *pos = (fzf_position_t *)malloc(sizeof(fzf_position_t));
     pos->size = 0;
     pos->cap = len;
@@ -1232,7 +1232,10 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
         }
         current_score = res.score;
         matched = true;
-      } else if (term->inv) {
+        break;
+      }
+
+      if (term->inv) {
         current_score = 0;
         matched = true;
       }
@@ -1274,7 +1277,10 @@ fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
         }
         current_res = res;
         matched = true;
-      } else if (term->inv) {
+        break;
+      }
+
+      if (term->inv) {
         matched = true;
       }
     }
