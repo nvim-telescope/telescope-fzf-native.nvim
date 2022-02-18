@@ -738,6 +738,13 @@ TEST(pos_integration, simple_or) {
   pos_wrapper("'src | ^Lua", input, expected);
 }
 
+TEST(pos_integration, or_mem_leak) {
+  char *input[] = {"src/fzf.h", NULL};
+  int match1[] = {2, 1, 0, -1};
+  int *expected[] = {match1};
+  pos_wrapper("src | src", input, expected);
+}
+
 TEST(pos_integration, complex_term) {
   char *input[] = {"lua/random_previewer", "README.md",
                    "previewers/utils.lua", "previewers/buffer.lua",
