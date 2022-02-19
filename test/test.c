@@ -17,21 +17,17 @@ typedef enum {
 
 #define call_alg(alg, case, txt, pat, assert_block)                            \
   {                                                                            \
-    fzf_result_t res = alg(case, false, txt, pat, true, NULL);                 \
+    fzf_position_t *pos = fzf_pos_array(0);                                    \
+    fzf_result_t res = alg(case, false, txt, pat, pos, NULL);                  \
     assert_block;                                                              \
-    if (res.pos) {                                                             \
-      free(res.pos->data);                                                     \
-      free(res.pos);                                                           \
-    }                                                                          \
+    fzf_free_positions(pos);                                                   \
   }                                                                            \
   {                                                                            \
+    fzf_position_t *pos = fzf_pos_array(0);                                    \
     fzf_slab_t *slab = fzf_make_default_slab();                                \
-    fzf_result_t res = alg(case, false, txt, pat, true, slab);                 \
+    fzf_result_t res = alg(case, false, txt, pat, pos, slab);                  \
     assert_block;                                                              \
-    if (res.pos) {                                                             \
-      free(res.pos->data);                                                     \
-      free(res.pos);                                                           \
-    }                                                                          \
+    fzf_free_positions(pos);                                                   \
     fzf_free_slab(slab);                                                       \
   }
 
@@ -41,11 +37,11 @@ static int8_t max_i8(int8_t a, int8_t b) {
 
 #define MATCH_WRAPPER(nn, og)                                                  \
   fzf_result_t nn(bool case_sensitive, bool normalize, const char *text,       \
-                  const char *pattern, bool with_pos, fzf_slab_t *slab) {      \
+                  const char *pattern, fzf_position_t *pos,                    \
+                  fzf_slab_t *slab) {                                          \
     fzf_string_t input = {.data = text, .size = strlen(text)};                 \
     fzf_string_t pattern_wrap = {.data = pattern, .size = strlen(pattern)};    \
-    return og(case_sensitive, normalize, &input, &pattern_wrap, with_pos,      \
-              slab);                                                           \
+    return og(case_sensitive, normalize, &input, &pattern_wrap, pos, slab);    \
   }
 
 MATCH_WRAPPER(fuzzy_match_v2, fzf_fuzzy_match_v2);
@@ -62,9 +58,9 @@ TEST(FuzzyMatchV2, case1) {
     ASSERT_EQ(2, res.end);
     ASSERT_EQ(56, res.score);
 
-    ASSERT_EQ(2, res.pos->size);
-    ASSERT_EQ(1, res.pos->data[0]);
-    ASSERT_EQ(0, res.pos->data[1]);
+    ASSERT_EQ(2, pos->size);
+    ASSERT_EQ(1, pos->data[0]);
+    ASSERT_EQ(0, pos->data[1]);
   });
 }
 
@@ -74,11 +70,11 @@ TEST(FuzzyMatchV2, case2) {
     ASSERT_EQ(7, res.end);
     ASSERT_EQ(89, res.score);
 
-    ASSERT_EQ(4, res.pos->size);
-    ASSERT_EQ(6, res.pos->data[0]);
-    ASSERT_EQ(3, res.pos->data[1]);
-    ASSERT_EQ(1, res.pos->data[2]);
-    ASSERT_EQ(0, res.pos->data[3]);
+    ASSERT_EQ(4, pos->size);
+    ASSERT_EQ(6, pos->data[0]);
+    ASSERT_EQ(3, pos->data[1]);
+    ASSERT_EQ(1, pos->data[2]);
+    ASSERT_EQ(0, pos->data[3]);
   });
 }
 
@@ -88,12 +84,12 @@ TEST(FuzzyMatchV2, case3) {
     ASSERT_EQ(5, res.end);
     ASSERT_EQ(128, res.score);
 
-    ASSERT_EQ(5, res.pos->size);
-    ASSERT_EQ(4, res.pos->data[0]);
-    ASSERT_EQ(3, res.pos->data[1]);
-    ASSERT_EQ(2, res.pos->data[2]);
-    ASSERT_EQ(1, res.pos->data[3]);
-    ASSERT_EQ(0, res.pos->data[4]);
+    ASSERT_EQ(5, pos->size);
+    ASSERT_EQ(4, pos->data[0]);
+    ASSERT_EQ(3, pos->data[1]);
+    ASSERT_EQ(2, pos->data[2]);
+    ASSERT_EQ(1, pos->data[3]);
+    ASSERT_EQ(0, pos->data[4]);
   });
 }
 
@@ -308,9 +304,9 @@ TEST(FuzzyMatchV1, case1) {
     ASSERT_EQ(2, res.end);
     ASSERT_EQ(56, res.score);
 
-    ASSERT_EQ(2, res.pos->size);
-    ASSERT_EQ(0, res.pos->data[0]);
-    ASSERT_EQ(1, res.pos->data[1]);
+    ASSERT_EQ(2, pos->size);
+    ASSERT_EQ(0, pos->data[0]);
+    ASSERT_EQ(1, pos->data[1]);
   });
 }
 
@@ -320,11 +316,11 @@ TEST(FuzzyMatchV1, case2) {
     ASSERT_EQ(7, res.end);
     ASSERT_EQ(89, res.score);
 
-    ASSERT_EQ(4, res.pos->size);
-    ASSERT_EQ(0, res.pos->data[0]);
-    ASSERT_EQ(1, res.pos->data[1]);
-    ASSERT_EQ(3, res.pos->data[2]);
-    ASSERT_EQ(6, res.pos->data[3]);
+    ASSERT_EQ(4, pos->size);
+    ASSERT_EQ(0, pos->data[0]);
+    ASSERT_EQ(1, pos->data[1]);
+    ASSERT_EQ(3, pos->data[2]);
+    ASSERT_EQ(6, pos->data[3]);
   });
 }
 
@@ -334,12 +330,12 @@ TEST(FuzzyMatchV1, case3) {
     ASSERT_EQ(5, res.end);
     ASSERT_EQ(128, res.score);
 
-    ASSERT_EQ(5, res.pos->size);
-    ASSERT_EQ(0, res.pos->data[0]);
-    ASSERT_EQ(1, res.pos->data[1]);
-    ASSERT_EQ(2, res.pos->data[2]);
-    ASSERT_EQ(3, res.pos->data[3]);
-    ASSERT_EQ(4, res.pos->data[4]);
+    ASSERT_EQ(5, pos->size);
+    ASSERT_EQ(0, pos->data[0]);
+    ASSERT_EQ(1, pos->data[1]);
+    ASSERT_EQ(2, pos->data[2]);
+    ASSERT_EQ(3, pos->data[3]);
+    ASSERT_EQ(4, pos->data[4]);
   });
 }
 
@@ -679,6 +675,11 @@ static void pos_wrapper(char *pattern, char **input, int **expected) {
   fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, pattern, true);
   for (size_t i = 0; input[i] != NULL; ++i) {
     fzf_position_t *pos = fzf_get_positions(input[i], pat, slab);
+    if (!pos) {
+      ASSERT_EQ((void *)pos, expected[i]);
+      continue;
+    }
+
     // Verify that the size is correct
     if (expected[i]) {
       ASSERT_EQ(-1, expected[i][pos->size]);
