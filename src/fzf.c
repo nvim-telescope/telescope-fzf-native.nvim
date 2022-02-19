@@ -18,18 +18,6 @@
     free((obj).data);                                                          \
   }
 
-#define gen_slice(name, type)                                                  \
-  typedef struct {                                                             \
-    type *data;                                                                \
-    size_t size;                                                               \
-  } name##_slice_t;                                                            \
-  static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
-    return (name##_slice_t){.data = input + from, .size = to - from};          \
-  }                                                                            \
-  static name##_slice_t slice_##name##_right(type *input, size_t to) {         \
-    return slice_##name(input, 0, to);                                         \
-  }
-
 #define gen_simple_slice(name, type)                                           \
   typedef struct {                                                             \
     type *data;                                                                \
@@ -37,6 +25,12 @@
   } name##_slice_t;                                                            \
   static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
     return (name##_slice_t){.data = input + from, .size = to - from};          \
+  }
+
+#define gen_slice(name, type)                                                  \
+  gen_simple_slice(name, type);                                                \
+  static name##_slice_t slice_##name##_right(type *input, size_t to) {         \
+    return slice_##name(input, 0, to);                                         \
   }
 
 gen_slice(i16, int16_t);
@@ -135,37 +129,40 @@ static bool has_suffix(const char *str, size_t len, const char *suffix,
                  suffix_len) == 0;
 }
 
-// TODO(conni2461): REFACTOR
+static char *str_replace_char(char *str, char find, char replace) {
+  char *current_pos = strchr(str, find);
+  while (current_pos) {
+    *current_pos = replace;
+    current_pos = strchr(current_pos, find);
+  }
+  return str;
+}
+
 static char *str_replace(char *orig, char *rep, char *with) {
+  if (!orig || !rep || !with) {
+    return NULL;
+  }
+
   char *result;
   char *ins;
   char *tmp;
 
-  size_t len_rep;
-  size_t len_with;
-  size_t len_front;
-  size_t count;
+  size_t len_rep = strlen(rep);
+  size_t len_front = 0;
+  size_t len_orig = strlen(orig);
+  size_t len_with = strlen(with);
+  size_t count = 0;
 
-  if (!orig || !rep) {
-    return NULL;
-  }
-  len_rep = strlen(rep);
   if (len_rep == 0) {
     return NULL;
   }
-  if (!with) {
-    with = "";
-  }
-  len_with = strlen(with);
 
   ins = orig;
-  for (count = 0; (tmp = strstr(ins, rep)); ++count) {
+  for (; (tmp = strstr(ins, rep)); ++count) {
     ins = tmp + len_rep;
   }
 
-  tmp = result =
-      (char *)malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
+  tmp = result = (char *)malloc(len_orig + (len_with - len_rep) * count + 1);
   if (!result) {
     return NULL;
   }
@@ -176,8 +173,10 @@ static char *str_replace(char *orig, char *rep, char *with) {
     tmp = strncpy(tmp, orig, len_front) + len_front;
     tmp = strcpy(tmp, with) + len_with;
     orig += len_front + len_rep;
+    len_orig -= len_front + len_rep;
   }
-  strcpy(tmp, orig);
+  strncpy(tmp, orig, len_orig);
+  tmp[len_orig] = 0;
   return result;
 }
 
@@ -199,45 +198,51 @@ static size_t min64u(size_t a, size_t b) {
   return (a < b) ? a : b;
 }
 
-static fzf_position_t *pos_array(bool with_pos, size_t len) {
-  if (with_pos && len > 0) {
-    fzf_position_t *pos = (fzf_position_t *)malloc(sizeof(fzf_position_t));
-    pos->size = 0;
-    pos->cap = len;
+fzf_position_t *fzf_pos_array(size_t len) {
+  fzf_position_t *pos = (fzf_position_t *)malloc(sizeof(fzf_position_t));
+  pos->size = 0;
+  pos->cap = len;
+  if (len > 0) {
     pos->data = (uint32_t *)malloc(len * sizeof(uint32_t));
-    return pos;
+  } else {
+    pos->data = NULL;
   }
-  return NULL;
+  return pos;
 }
 
-typedef struct {
-  size_t add_len;
-  size_t comp;
-} resize_config_t;
-
-static void resize_pos(fzf_position_t *pos, resize_config_t config) {
-  if (pos->size + config.comp > pos->cap) {
-    pos->cap += config.add_len;
+static void resize_pos(fzf_position_t *pos, size_t add_len, size_t comp) {
+  if (!pos) {
+    return;
+  }
+  if (pos->size + comp > pos->cap) {
+    pos->cap += add_len > 0 ? add_len : 1;
     pos->data = (uint32_t *)realloc(pos->data, sizeof(uint32_t) * pos->cap);
   }
 }
 
-static void append_pos(fzf_position_t *pos, size_t value) {
-  resize_pos(pos, (resize_config_t){.add_len = pos->cap, .comp = 1});
+static void unsafe_append_pos(fzf_position_t *pos, size_t value) {
+  resize_pos(pos, pos->cap, 1);
   pos->data[pos->size] = value;
   pos->size++;
 }
 
-static void concat_pos(fzf_position_t *left, fzf_position_t *right) {
-  resize_pos(left,
-             (resize_config_t){.add_len = right->size, .comp = right->size});
-  memcpy(left->data + left->size, right->data, right->size * sizeof(uint32_t));
-  left->size += right->size;
+static void append_pos(fzf_position_t *pos, size_t value) {
+  if (pos) {
+    unsafe_append_pos(pos, value);
+  }
 }
 
-static void insert_pos(fzf_position_t *pos, size_t start, size_t end) {
-  resize_pos(pos,
-             (resize_config_t){.add_len = end - start, .comp = end - start});
+static void insert_range(fzf_position_t *pos, size_t start, size_t end) {
+  if (!pos) {
+    return;
+  }
+
+  int32_t diff = ((int32_t)end - (int32_t)start);
+  if (diff <= 0) {
+    return;
+  }
+
+  resize_pos(pos, end - start, end - start);
   for (size_t k = start; k < end; k++) {
     pos->data[pos->size] = k;
     pos->size++;
@@ -254,6 +259,7 @@ static fzf_i16_t alloc16(size_t *offset, fzf_slab_t *slab, size_t size) {
                        .allocated = false};
   }
   int16_t *data = (int16_t *)malloc(size * sizeof(int16_t));
+  memset(data, 0, size * sizeof(int16_t));
   return (fzf_i16_t){
       .data = data, .size = size, .cap = size, .allocated = true};
 }
@@ -268,6 +274,7 @@ static fzf_i32_t alloc32(size_t *offset, fzf_slab_t *slab, size_t size) {
                        .allocated = false};
   }
   int32_t *data = (int32_t *)malloc(size * sizeof(int32_t));
+  memset(data, 0, size * sizeof(int32_t));
   return (fzf_i32_t){
       .data = data, .size = size, .cap = size, .allocated = true};
 }
@@ -391,15 +398,9 @@ static int32_t ascii_fuzzy_index(fzf_string_t *input, const char *pattern,
   return first_idx;
 }
 
-typedef struct {
-  int32_t score;
-  fzf_position_t *pos;
-} score_pos_tuple_t;
-
-static score_pos_tuple_t fzf_calculate_score(bool case_sensitive,
-                                             bool normalize, fzf_string_t *text,
-                                             fzf_string_t *pattern, size_t sidx,
-                                             size_t eidx, bool with_pos) {
+static int32_t calculate_score(bool case_sensitive, bool normalize,
+                               fzf_string_t *text, fzf_string_t *pattern,
+                               size_t sidx, size_t eidx, fzf_position_t *pos) {
   const size_t M = pattern->size;
 
   size_t pidx = 0;
@@ -407,7 +408,8 @@ static score_pos_tuple_t fzf_calculate_score(bool case_sensitive,
   int32_t consecutive = 0;
   bool in_gap = false;
   int16_t first_bonus = 0;
-  fzf_position_t *pos = pos_array(with_pos, M);
+
+  resize_pos(pos, M, M);
   int32_t prev_class = CharNonWord;
   if (sidx > 0) {
     prev_class = char_class_of(text->data[sidx - 1]);
@@ -423,9 +425,7 @@ static score_pos_tuple_t fzf_calculate_score(bool case_sensitive,
       c = normalize_rune(c);
     }
     if (c == pattern->data[pidx]) {
-      if (with_pos) {
-        append_pos(pos, idx);
-      }
+      append_pos(pos, idx);
       score += ScoreMatch;
       int16_t bonus = bonus_for(prev_class, class);
       if (consecutive == 0) {
@@ -456,19 +456,19 @@ static score_pos_tuple_t fzf_calculate_score(bool case_sensitive,
     }
     prev_class = class;
   }
-  return (score_pos_tuple_t){score, pos};
+  return score;
 }
 
 fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
                                 fzf_string_t *text, fzf_string_t *pattern,
-                                bool with_pos, fzf_slab_t *slab) {
+                                fzf_position_t *pos, fzf_slab_t *slab) {
   const size_t M = pattern->size;
   const size_t N = text->size;
   if (M == 0) {
-    return (fzf_result_t){0, 0, 0, NULL};
+    return (fzf_result_t){0, 0, 0};
   }
   if (ascii_fuzzy_index(text, pattern->data, M, case_sensitive) < 0) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
 
   int32_t pidx = 0;
@@ -514,32 +514,31 @@ fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
       }
     }
 
-    score_pos_tuple_t tuple = fzf_calculate_score(
-        case_sensitive, normalize, text, pattern, start, end, with_pos);
-    return (fzf_result_t){(int32_t)start, (int32_t)end, tuple.score, tuple.pos};
+    int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+                                    start, end, pos);
+    return (fzf_result_t){(int32_t)start, (int32_t)end, score};
   }
-  return (fzf_result_t){-1, -1, 0, NULL};
+  return (fzf_result_t){-1, -1, 0};
 }
 
 fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
-                                fzf_string_t *input, fzf_string_t *pattern,
-                                bool with_pos, fzf_slab_t *slab) {
+                                fzf_string_t *text, fzf_string_t *pattern,
+                                fzf_position_t *pos, fzf_slab_t *slab) {
   const size_t M = pattern->size;
-  const size_t N = input->size;
+  const size_t N = text->size;
   if (M == 0) {
-    return (fzf_result_t){0, 0, 0, pos_array(with_pos, M)};
+    return (fzf_result_t){0, 0, 0};
   }
   if (slab != NULL && N * M > slab->I16.cap) {
-    return fzf_fuzzy_match_v1(case_sensitive, normalize, input, pattern,
-                              with_pos, slab);
+    return fzf_fuzzy_match_v1(case_sensitive, normalize, text, pattern, pos,
+                              slab);
   }
 
   size_t idx;
   {
-    int32_t tmp_idx =
-        ascii_fuzzy_index(input, pattern->data, M, case_sensitive);
+    int32_t tmp_idx = ascii_fuzzy_index(text, pattern->data, M, case_sensitive);
     if (tmp_idx < 0) {
-      return (fzf_result_t){-1, -1, 0, NULL};
+      return (fzf_result_t){-1, -1, 0};
     }
     idx = (size_t)tmp_idx;
   }
@@ -555,7 +554,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
   fzf_i32_t f = alloc32(&offset32, slab, M);
   // Rune array
   fzf_i32_t t = alloc32(&offset32, slab, N);
-  copy_runes(input, &t); // input.CopyRunes(T)
+  copy_runes(text, &t); // input.CopyRunes(T)
 
   // Phase 2. Calculate bonus for each point
   int16_t max_score = 0;
@@ -632,7 +631,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
     free_alloc(bo);
     free_alloc(c0);
     free_alloc(h0);
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
   if (M == 1) {
     free_alloc(t);
@@ -641,13 +640,8 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
     free_alloc(c0);
     free_alloc(h0);
     fzf_result_t res = {(int32_t)max_score_pos, (int32_t)max_score_pos + 1,
-                        max_score, NULL};
-    if (!with_pos) {
-      return res;
-    }
-    fzf_position_t *pos = pos_array(with_pos, 1);
+                        max_score};
     append_pos(pos, max_score_pos);
-    res.pos = pos;
     return res;
   }
 
@@ -688,7 +682,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
         slice_i16(h.data, row + f - f0 - 1, h.size).data, t_sub.size);
     h_left.data[0] = 0;
     for (size_t j = 0; j < t_sub.size; j++) {
-      char c = (char)t_sub.data[j];
+      char ch = (char)t_sub.data[j];
       size_t col = j + f;
       int16_t s1 = 0;
       int16_t s2 = 0;
@@ -700,7 +694,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
         s2 = h_left.data[j] + ScoreGapStart;
       }
 
-      if (pchar == c) {
+      if (pchar == ch) {
         s1 = h_diag.data[j] + ScoreMatch;
         int16_t b = b_sub.data[j];
         consecutive = c_diag.data[j] + 1;
@@ -728,9 +722,9 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
     }
   }
 
-  fzf_position_t *pos = pos_array(with_pos, M);
+  resize_pos(pos, M, M);
   size_t j = max_score_pos;
-  if (with_pos) {
+  if (pos) {
     size_t i = M - 1;
     bool prefer_match = true;
     for (;;) {
@@ -748,7 +742,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
       }
 
       if (s > s1 && (s > s2 || (s == s2 && prefer_match))) {
-        append_pos(pos, j);
+        unsafe_append_pos(pos, j);
         if (i == 0) {
           break;
         }
@@ -768,23 +762,23 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
   free_alloc(c0);
   free_alloc(h0);
   return (fzf_result_t){(int32_t)j, (int32_t)max_score_pos + 1,
-                        (int32_t)max_score, pos};
+                        (int32_t)max_score};
 }
 
 fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
                                    fzf_string_t *text, fzf_string_t *pattern,
-                                   bool with_pos, fzf_slab_t *slab) {
+                                   fzf_position_t *pos, fzf_slab_t *slab) {
   const size_t M = pattern->size;
   const size_t N = text->size;
 
   if (M == 0) {
-    return (fzf_result_t){0, 0, 0, NULL};
+    return (fzf_result_t){0, 0, 0};
   }
   if (N < M) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
   if (ascii_fuzzy_index(text, pattern->data, M, case_sensitive) < 0) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
 
   size_t pidx = 0;
@@ -827,20 +821,20 @@ fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
     size_t bp = (size_t)best_pos;
     size_t sidx = bp - M + 1;
     size_t eidx = bp + 1;
-    int32_t score = fzf_calculate_score(case_sensitive, normalize, text,
-                                        pattern, sidx, eidx, false)
-                        .score;
-    return (fzf_result_t){(int32_t)sidx, (int32_t)eidx, score, NULL};
+    int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+                                    sidx, eidx, NULL);
+    insert_range(pos, sidx, eidx);
+    return (fzf_result_t){(int32_t)sidx, (int32_t)eidx, score};
   }
-  return (fzf_result_t){-1, -1, 0, NULL};
+  return (fzf_result_t){-1, -1, 0};
 }
 
 fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
                               fzf_string_t *text, fzf_string_t *pattern,
-                              bool with_pos, fzf_slab_t *slab) {
+                              fzf_position_t *pos, fzf_slab_t *slab) {
   const size_t M = pattern->size;
   if (M == 0) {
-    return (fzf_result_t){0, 0, 0, NULL};
+    return (fzf_result_t){0, 0, 0};
   }
   size_t trimmed_len = 0;
   /* TODO(conni2461): i feel this is wrong */
@@ -848,7 +842,7 @@ fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
     trimmed_len = leading_whitespaces(text);
   }
   if (text->size - trimmed_len < M) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
   for (size_t i = 0; i < M; i++) {
     char c = text->data[trimmed_len + i];
@@ -859,20 +853,20 @@ fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
       c = normalize_rune(c);
     }
     if (c != pattern->data[i]) {
-      return (fzf_result_t){-1, -1, 0, NULL};
+      return (fzf_result_t){-1, -1, 0};
     }
   }
   size_t start = trimmed_len;
   size_t end = trimmed_len + M;
-  int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
-                                      start, end, false)
-                      .score;
-  return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
+  int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+                                  start, end, NULL);
+  insert_range(pos, start, end);
+  return (fzf_result_t){(int32_t)start, (int32_t)end, score};
 }
 
 fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
                               fzf_string_t *text, fzf_string_t *pattern,
-                              bool with_pos, fzf_slab_t *slab) {
+                              fzf_position_t *pos, fzf_slab_t *slab) {
   size_t trimmed_len = text->size;
   const size_t M = pattern->size;
   /* TODO(conni2461): i think this is wrong */
@@ -880,11 +874,11 @@ fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
     trimmed_len -= trailing_whitespaces(text);
   }
   if (M == 0) {
-    return (fzf_result_t){(int32_t)trimmed_len, (int32_t)trimmed_len, 0, NULL};
+    return (fzf_result_t){(int32_t)trimmed_len, (int32_t)trimmed_len, 0};
   }
   size_t diff = trimmed_len - M;
   if (diff < 0) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
 
   for (size_t idx = 0; idx < M; idx++) {
@@ -896,30 +890,30 @@ fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
       c = normalize_rune(c);
     }
     if (c != pattern->data[idx]) {
-      return (fzf_result_t){-1, -1, 0, NULL};
+      return (fzf_result_t){-1, -1, 0};
     }
   }
   size_t start = trimmed_len - M;
   size_t end = trimmed_len;
-  int32_t score = fzf_calculate_score(case_sensitive, normalize, text, pattern,
-                                      start, end, false)
-                      .score;
-  return (fzf_result_t){(int32_t)start, (int32_t)end, score, NULL};
+  int32_t score = calculate_score(case_sensitive, normalize, text, pattern,
+                                  start, end, NULL);
+  insert_range(pos, start, end);
+  return (fzf_result_t){(int32_t)start, (int32_t)end, score};
 }
 
 fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
                              fzf_string_t *text, fzf_string_t *pattern,
-                             bool withPos, fzf_slab_t *slab) {
+                             fzf_position_t *pos, fzf_slab_t *slab) {
   const size_t M = pattern->size;
   if (M == 0) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
 
   size_t trimmed_len = leading_whitespaces(text);
   size_t trimmed_end_len = trailing_whitespaces(text);
 
   if ((text->size - trimmed_len - trimmed_end_len) != M) {
-    return (fzf_result_t){-1, -1, 0, NULL};
+    return (fzf_result_t){-1, -1, 0};
   }
 
   bool match = true;
@@ -951,13 +945,13 @@ fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
     }
   }
   if (match) {
+    insert_range(pos, trimmed_len, trimmed_len + M);
     return (fzf_result_t){(int32_t)trimmed_len,
                           ((int32_t)trimmed_len + (int32_t)M),
                           (ScoreMatch + BonusBoundary) * (int32_t)M +
-                              (BonusFirstCharMultiplier - 1) * BonusBoundary,
-                          NULL};
+                              (BonusFirstCharMultiplier - 1) * BonusBoundary};
   }
-  return (fzf_result_t){-1, -1, 0, NULL};
+  return (fzf_result_t){-1, -1, 0};
 }
 
 static void append_set(fzf_term_set_t *set, fzf_term_t value) {
@@ -985,9 +979,9 @@ static void append_pattern(fzf_pattern_t *pattern, fzf_term_set_t *value) {
   pattern->size++;
 }
 
-#define CALL_ALG(term, normalize, input, with_pos, slab)                       \
+#define CALL_ALG(term, normalize, input, pos, slab)                            \
   term->fn((term)->case_sensitive, normalize, &(input),                        \
-           (fzf_string_t *)(term)->text, with_pos, slab)
+           (fzf_string_t *)(term)->text, pos, slab)
 
 // TODO(conni2461): REFACTOR
 /* assumption (maybe i change that later)
@@ -1011,7 +1005,6 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
   }
 
   char *pattern_copy = str_replace(pattern, "\\ ", "\t");
-
   const char *delim = " ";
   char *ptr = strtok(pattern_copy, delim);
 
@@ -1023,8 +1016,11 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
   while (ptr != NULL) {
     fzf_algo_t fn = fzf_fuzzy_match_v2;
     bool inv = false;
-    char *text = str_replace(ptr, "\t", " ");
-    size_t len = strlen(text);
+
+    size_t len = strlen(ptr);
+    str_replace_char(ptr, '\t', ' ');
+    char *text = strdup(ptr);
+
     char *og_str = text;
     char *lower_text = str_tolower(text, len);
     bool case_sensitive =
@@ -1105,6 +1101,9 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
   }
   if (set->size > 0) {
     append_pattern(pat_obj, set);
+  } else {
+    SFREE(set->ptr);
+    SFREE(set);
   }
   bool only = true;
   for (size_t i = 0; i < pat_obj->size; i++) {
@@ -1149,14 +1148,13 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
   }
 
   fzf_string_t input = {.data = text, .size = strlen(text)};
-
   if (pattern->only_inv) {
     int final = 0;
     for (size_t i = 0; i < pattern->size; i++) {
       fzf_term_set_t *term_set = pattern->ptr[i];
       fzf_term_t *term = &term_set->ptr[0];
 
-      final += CALL_ALG(term, false, input, false, slab).score;
+      final += CALL_ALG(term, false, input, NULL, slab).score;
     }
     return (final > 0) ? 0 : 1;
   }
@@ -1168,7 +1166,7 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
     bool matched = false;
     for (size_t j = 0; j < term_set->size; j++) {
       fzf_term_t *term = &term_set->ptr[j];
-      fzf_result_t res = CALL_ALG(term, false, input, false, slab);
+      fzf_result_t res = CALL_ALG(term, false, input, NULL, slab);
       if (res.start >= 0) {
         if (term->inv) {
           continue;
@@ -1203,45 +1201,31 @@ fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
   }
 
   fzf_string_t input = {.data = text, .size = strlen(text)};
-
-  fzf_position_t *all_pos = pos_array(true, 1);
-
+  fzf_position_t *all_pos = fzf_pos_array(0);
   for (size_t i = 0; i < pattern->size; i++) {
     fzf_term_set_t *term_set = pattern->ptr[i];
-    fzf_result_t current_res = (fzf_result_t){0, 0, 0, NULL};
     bool matched = false;
     for (size_t j = 0; j < term_set->size; j++) {
       fzf_term_t *term = &term_set->ptr[j];
-      fzf_result_t res = CALL_ALG(term, false, input, true, slab);
-      if (res.start >= 0) {
-        if (term->inv) {
-          fzf_free_positions(res.pos);
-          continue;
+      if (term->inv) {
+        // If we have an inverse term we need to check if we have a match, but
+        // we are not interested in the positions (for highlights) so to speed
+        // this up we can pass in NULL here and don't calculate the positions
+        fzf_result_t res = CALL_ALG(term, false, input, NULL, slab);
+        if (res.start < 0) {
+          matched = true;
         }
-        current_res = res;
+        continue;
+      }
+      fzf_result_t res = CALL_ALG(term, false, input, all_pos, slab);
+      if (res.start >= 0) {
         matched = true;
         break;
       }
-
-      if (term->inv) {
-        matched = true;
-      }
     }
-    if (matched) {
-      if (current_res.pos) {
-        concat_pos(all_pos, current_res.pos);
-        fzf_free_positions(current_res.pos);
-      } else {
-        int32_t diff = (current_res.end - current_res.start);
-        if (diff > 0) {
-          insert_pos(all_pos, (size_t)current_res.start,
-                     (size_t)current_res.end);
-        }
-      }
-    } else {
-      SFREE(all_pos->data);
-      memset(all_pos, 0, sizeof(*all_pos));
-      break;
+    if (!matched) {
+      fzf_free_positions(all_pos);
+      return NULL;
     }
   }
   return all_pos;
@@ -1274,8 +1258,7 @@ fzf_slab_t *fzf_make_slab(fzf_slab_config_t config) {
 }
 
 fzf_slab_t *fzf_make_default_slab(void) {
-  return fzf_make_slab(
-      (fzf_slab_config_t){.size_16 = (size_t)100 * 1024, .size_32 = 2048});
+  return fzf_make_slab((fzf_slab_config_t){(size_t)100 * 1024, 2048});
 }
 
 void fzf_free_slab(fzf_slab_t *slab) {
