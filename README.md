@@ -76,13 +76,13 @@ This section is not addressed towards users of the telescope extension.
 
 ```c
 fzf_slab_t *slab = fzf_make_default_slab();
-/* fzf_case_mode enum : case_smart = 0, case_ignore, case_respect
+/* fzf_case_mode enum : CaseSmart = 0, CaseIgnore, CaseRespect
  * normalize bool     : always set to false because its not implemented yet.
  *                      This is reserved for future use
  * pattern char*      : pattern you want to match. e.g. "src | lua !.c$
  * fuzzy bool         : enable or disable fuzzy matching
  */
-fzf_pattern_t *pattern = fzf_parse_pattern(case_smart, false, "src | lua !.c$", true);
+fzf_pattern_t *pattern = fzf_parse_pattern(CaseSmart, false, "src | lua !.c$", true);
 
 /* you can get the score/position for as many items as you want */
 int score = fzf_get_score(line, pattern, slab);
