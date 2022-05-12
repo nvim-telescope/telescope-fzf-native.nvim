@@ -1,22 +1,20 @@
-cmake_minimum_required(VERSION 3.13)
-project(fzf C)
+cmake_minimum_required(VERSION 3.2)
+project(fzf)
 
-set(CMAKE_INSTALL_PREFIX ".")
+add_compile_options(-Wall -Werror)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
-if (MSVC)
-    set(CMAKE_SHARED_LIBRARY_PREFIX lib)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Werror)
-    set(CMAKE_C_STANDARD 99)
-    set(CMAKE_C_STANDARD_REQUIRED TRUE)
-endif()
+add_library(${PROJECT_NAME} SHARED "src/fzf.c")
 
-# To build the library:
-#   $ mkdir build && cd build
-#   $ cmake .. -DCMAKE_BUILD_TYPE=Release
-#   $ cmake --build . --config Release
-add_library(fzf SHARED src/fzf.c src/fzf.h)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-install(TARGETS fzf DESTINATION ${CMAKE_BINARY_DIR})
+if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+else ()
+	target_compile_options(${PROJECT_NAME} PRIVATE -std=gnu99)
+endif ()
+
+set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_BINARY_DIR})
