@@ -49,10 +49,6 @@ jobs:
           cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
           cmake --install build --prefix build
-      - name: Archive latest Windows build
-        uses: actions/upload-artifact@v2
-        with:
-          path: build/libfzf.dll
 
   nvim-tests:
     name: nvim-tests
