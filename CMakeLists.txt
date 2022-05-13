@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 project(fzf)
 
 add_library(${PROJECT_NAME} SHARED "src/fzf.c")
-
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "lib")
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
