@@ -16,7 +16,6 @@ is supported:
 | `!^music` | inverse-prefix-exact-match | Items that do not start with `music` |
 | `!.mp3$`  | inverse-suffix-exact-match | Items that do not end with `.mp3`    |
 
-
 A single bar character term acts as an OR operator. For example, the following
 query matches entries that start with `core` and end with either `go`, `rb`,
 or `py`.
@@ -30,16 +29,39 @@ available for telescope (as native component or as lua component).
 
 ## Installation
 
-To get **fzf-native** working, you need to run make at the root directory. As of
-now, we do not ship binaries.
+To get **fzf-native** working, you need to build it with either `cmake` or `make`. As of now, we do not ship binaries.
+Both install methods will be supported going forward.
 
-### vim-plug
+### CMake (Windows, Linux, MacOS)
+
+This requires:
+
+- CMake, and the Microsoft C++ Build Tools on Windows
+- CMake, make, and GCC or Clang on Linux and MacOS
+
+#### vim-plug
+
+```viml
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+```
+
+#### packer.nvim
+
+```lua
+use {'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+```
+
+### Make (Linux, MacOS, Windows with MinGW)
+
+This requires `gcc` or `clang` and `make`
+
+#### vim-plug
 
 ```viml
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 ```
 
-### packer.nvim
+#### packer.nvim
 
 ```lua
 use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
