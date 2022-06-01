@@ -53,7 +53,11 @@ local get_fzf_sorter = function(opts)
       for _, v in pairs(self.state.prompt_cache) do
         fzf.free_pattern(v)
       end
-      fzf.free_slab(self.state.slab)
+      self.state.prompt_cache = {}
+      if self.state.slab ~= nil then
+        fzf.free_slab(self.state.slab)
+        self.state.slab = nil
+      end
     end,
     start = function(self, prompt)
       local last = prompt:sub(-1, -1)
