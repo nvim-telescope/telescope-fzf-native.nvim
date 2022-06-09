@@ -15,6 +15,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)
 else ()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+    set(CMAKE_SHARED_LIBRARY_SUFFIX .so)
 endif ()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_BINARY_DIR})
