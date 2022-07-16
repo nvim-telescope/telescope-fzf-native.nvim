@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "ninja",
+      "inherits": "base",
+      "generator": "Ninja"
+    },
+    {
+      "name": "make",
+      "inherits": "base",
+      "generator": "Unix Makefiles"
+    }
+  ]
+}
