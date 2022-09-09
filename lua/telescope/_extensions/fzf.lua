@@ -97,6 +97,8 @@ local get_fzf_sorter = function(opts)
       local score = fzf.get_score(line, obj, self.state.slab)
       if score == 0 then
         return -1
+      elseif not fuzzy_mode then
+        return 1
       else
         return 1 / score
       end
