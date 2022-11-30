@@ -117,6 +117,13 @@ local fast_extend = function(opts, conf)
   return ret
 end
 
+local wrap_sorter = function(conf)
+  return function(opts)
+    opts = opts or {}
+    return get_fzf_sorter(fast_extend(opts, conf))
+  end
+end
+
 return require("telescope").register_extension {
   setup = function(ext_config, config)
     local override_file = vim.F.if_nil(ext_config.override_file_sorter, true)
@@ -127,17 +134,11 @@ return require("telescope").register_extension {
     conf.fuzzy = vim.F.if_nil(ext_config.fuzzy, true)
 
     if override_file then
-      config.file_sorter = function(opts)
-        opts = opts or {}
-        return get_fzf_sorter(fast_extend(opts, conf))
-      end
+      config.file_sorter = wrap_sorter(conf)
     end
 
     if override_generic then
-      config.generic_sorter = function(opts)
-        opts = opts or {}
-        return get_fzf_sorter(fast_extend(opts, conf))
-      end
+      config.generic_sorter = wrap_sorter(conf)
     end
   end,
   exports = {
@@ -145,4 +146,54 @@ return require("telescope").register_extension {
       return get_fzf_sorter(opts or { case_mode = "smart_case", fuzzy = true })
     end,
   },
+  health = function()
+    local health = vim.health or require "health"
+
+    local good = true
+    local eq = function(expected, actual)
+      if tostring(expected) ~= tostring(actual) then
+        good = false
+      end
+    end
+
+    local p = fzf.parse_pattern("fzf", 0)
+    local slab = fzf.allocate_slab()
+
+    eq(80, fzf.get_score("src/fzf", p, slab))
+    eq(0, fzf.get_score("asdf", p, slab))
+    eq(54, fzf.get_score("fasdzasdf", p, slab))
+
+    fzf.free_pattern(p)
+    fzf.free_slab(slab)
+
+    if good then
+      health.report_ok "lib working as expected"
+    else
+      health.report_error "lib not working as expected, please reinstall and open an issue if this error persists"
+      return
+    end
+
+    local has, config = pcall(require, "telescope.config")
+    if not has then
+      health.report_error "unexpected: telescope configuration couldn't be loaded"
+    end
+
+    local test_sorter = function(name, sorter)
+      good = true
+      sorter:init()
+      local prompt = "fzf !lua"
+      eq(1 / 80, sorter:scoring_function(prompt, "src/fzf"))
+      eq(-1, sorter:scoring_function(prompt, "lua/fzf"))
+      eq(-1, sorter:scoring_function(prompt, "asdf"))
+      sorter:destroy()
+
+      if good then
+        health.report_ok(name .. " correctly configured")
+      else
+        health.report_warn(name .. " is not configured")
+      end
+    end
+    test_sorter("file_sorter", config.values.file_sorter {})
+    test_sorter("generic_sorter", config.values.generic_sorter {})
+  end,
 }
