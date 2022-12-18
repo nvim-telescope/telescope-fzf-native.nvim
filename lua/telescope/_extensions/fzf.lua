@@ -180,12 +180,12 @@ return require("telescope").register_extension {
 
     local test_sorter = function(name, sorter)
       good = true
-      sorter:init()
+      sorter:_init()
       local prompt = "fzf !lua"
       eq(1 / 80, sorter:scoring_function(prompt, "src/fzf"))
       eq(-1, sorter:scoring_function(prompt, "lua/fzf"))
       eq(-1, sorter:scoring_function(prompt, "asdf"))
-      sorter:destroy()
+      sorter:_destroy()
 
       if good then
         health.report_ok(name .. " correctly configured")
