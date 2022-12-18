@@ -1,10 +1,16 @@
 CFLAGS = -Wall -Werror -fpic -std=gnu99
 
 ifeq ($(OS),Windows_NT)
-    MKD = cmd //C mkdir
-    RM = cmd //C rmdir //Q //S
     CC = gcc
     TARGET := libfzf.dll
+ifeq (,$(findstring MSYS,$(MSYSTEM)))
+	# On Windows, but NOT msys
+    MKD = cmd /C mkdir
+    RM = cmd /C rmdir /Q /S
+else
+    MKD = mkdir -p
+    RM = rm -rf
+endif
 else
     MKD = mkdir -p
     RM = rm -rf
