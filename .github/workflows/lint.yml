@@ -2,12 +2,17 @@ name: Linting and style checking
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Prepare
         run: |
@@ -22,7 +27,7 @@ jobs:
     name: clangformat
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Prepare clang-format
         run: |
           sudo apt-get update
@@ -34,7 +39,7 @@ jobs:
     name: stylua
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: JohnnyMorganz/stylua-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
