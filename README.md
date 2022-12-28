@@ -1,4 +1,4 @@
-# telescope-fzf-native.nvim
+``# telescope-fzf-native.nvim
 
 **fzf-native** is a `c` port of **[fzf][fzf]**. It only covers the algorithm and
 implements few functions to support calculating the score.
@@ -29,14 +29,65 @@ available for telescope (as native component or as lua component).
 
 ## Installation
 
-To get **fzf-native** working, you need to build it with either `cmake` or `make`. As of now, we do not ship binaries.
-Both install methods will be supported going forward.
+`telescope-fzf-native` is mostly a native binary. We do not commit this to the
+repo, so you'll need to include a post install step to get it downloaded from
+our github releases.
+
+```lua
+use {
+  'nvim-telescope/telescope-fzf-native.nvim',
+  run = function() require('telescope-fzf-native').download_library() end
+}
+```
+
+Normally this tries to detect your operating system and defaults to downloading
+the latest version.
+
+For other package managers, you'll want to look at the postinstall step:
+
+- [`packer.nvim`](https://github.com/wbthomason/packer.nvim) wants `run`
+- [`lazy.nvim`](https://github.com/folke/lazy.nvim) will want you to use `build`
+- [`vimplug`](https://github.com/junegunn/vim-plug) will probably want some kind `do` involving `:lua` :shrug:
+
+
+```vim
+Plug 'nvim-telescope/telescope-fzf-native.nvim', {
+  'do': ':lua require("telescope-fzf-native").download_library()'
+}
+```
+
+### download options
+
+```lua
+use {
+  'nvim-telescope/telescope-fzf-native.nvim',
+  run = function()
+    require('telescope-fzf-native').download_library({
+        platform = 'windows' -- windows | ubuntu | macos
+        compiler = 'cc', -- windows: cc, unix: gcc | clang
+        version = 'latest' -- any release name found on our github releases page
+    })
+  end
+}
+```
+
+> 🤚 Note
+>
+> You'll need to have both `curl` and `sh` shell installed.
+>
+> On windows, this is done by installing git, and on linux and mac this should already be solved.
+
+
+
+## Building yourself
+
+If you want to build **fzf-native** yourself, you will need either `cmake` or `make`.
 
 ### CMake (Windows, Linux, MacOS)
 
 This requires:
 
-- CMake, and the Microsoft C++ Build Tools on Windows
+- CMake, and the Microsoft C++ Build Tools (vcc) on Windows
 - CMake, make, and GCC or Clang on Linux and MacOS
 
 #### vim-plug
@@ -46,6 +97,7 @@ Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCM
 ```
 
 #### packer.nvim
+
 
 ```lua
 use {'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }

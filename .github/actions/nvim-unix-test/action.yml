@@ -1,0 +1,51 @@
+---
+name: Test Unix Library
+
+description: |
+  Run some neovim tests
+
+inputs:
+  os:
+    required: true
+    description: OS being tested
+  url:
+    required: true
+    description: OS being tested
+
+runs:
+  using: composite
+  steps:
+
+    - name: create cache key
+      shell: bash
+      run: date +%F > todays-date
+
+    - name: Restore cache for today's nightly.
+      uses: actions/cache@v2
+      with:
+        path: _neovim
+        key: ${{ inputs.os }}-${{ hashFiles('todays-date') }}
+
+    - name: Prepare
+      shell: bash
+      run: |
+        test -d _neovim || {
+          mkdir -p _neovim
+          curl -sL ${{ inputs.url }} | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
+        }
+        mkdir -p ~/.local/share/nvim/site/pack/vendor/start
+        git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
+        ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
+
+    - name: Build
+      shell: bash
+      run: make
+
+    - name: Tests
+      shell: bash
+      run: |
+        export PATH="${PWD}/_neovim/bin:${PATH}"
+        export VIM="${PWD}/_neovim/share/nvim/runtime"
+        nvim --version
+        make ntest
+

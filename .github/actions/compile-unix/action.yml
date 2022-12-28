@@ -1,0 +1,31 @@
+---
+name: Compile Unix Library
+
+description: |
+  Prepare and compile unix builds
+
+inputs:
+  compiler:
+    required: true
+    description: Compiler to use
+
+runs:
+  using: composite
+  steps:
+
+    - name: Prepare
+      env:
+        CC: ${{ inputs.compiler }}
+      shell: bash
+      run: |
+        cc --version
+        git clone https://github.com/Conni2461/examiner
+        cd examiner
+        make && sudo make install
+
+    - name: Build
+      env:
+        CC: ${{ inputs.compiler }}
+        LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
+      shell: bash
+      run: make

@@ -1,0 +1,44 @@
+---
+name: Prepare artifacts
+
+description: |
+  Downloads all prior artifacts into a directory.
+
+  each artifact will be in its own directory named after the
+  job that uploaded it.
+
+outputs:
+  staging_area:
+      description: Area in which artifacts from prior jobs are collated
+      value: ${{ steps.directories.outputs.staging_area }}
+
+runs:
+  using: composite
+  steps:
+
+    - name: Prepare Staging Area
+      shell: bash
+      id: directories
+      run: |
+        echo "staging_area=$(mktemp -d)" >> $GITHUB_OUTPUT
+        echo "artifacts=$(mktemp -d)" >> $GITHUB_OUTPUT
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        path: ${{ steps.directories.outputs.artifacts }}
+
+    - name: Prepare Release
+      env:
+        STAGING: ${{ steps.directories.outputs.staging_area }}
+        ARTIFACTS: ${{ steps.directories.outputs.artifacts }}
+      shell: bash
+      run: |
+        for file in ${ARTIFACTS}/**/*; do
+          FILENAME=$(basename $file)
+          PLATFORM=$(basename $(dirname $file))
+          cp $file "${STAGING}/${PLATFORM}-${FILENAME}"
+        done
+
+        ls -al ${STAGING}/*
+

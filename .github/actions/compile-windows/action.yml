@@ -1,0 +1,22 @@
+---
+name: Compile windows library
+
+description: |
+  Prepare and compile a windows build
+
+runs:
+
+  using: composite
+
+  steps:
+    - uses: lukka/get-cmake@latest
+
+    - name: Build
+      # powershell 7 is part of the 2019 toolset:
+      # https://github.com/actions/runner-images/blob/win19/20221214.4/images/win/Windows2019-Readme.md
+      shell: pwsh
+      run: |
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release
+        cmake --install build --prefix build
+
