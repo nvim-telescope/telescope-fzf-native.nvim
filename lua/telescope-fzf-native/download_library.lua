@@ -57,7 +57,29 @@ end
 -- the appropriate binary from our releases on github.
 --
 -- Ensures the expected 'build' directory exists before
--- dowloading.
+-- downloading.
+--
+-- Reminder:
+--
+-- The filenames to download are defined as a side effect of the
+-- matrix build names in `.github/actions/compile-unix/action.yml` and
+-- `.github/actions/compile-windows/action.yml`, then also due to how
+-- `.github/actions/prepare-artifacts/action.yml` downloads the artifacts
+-- before uploading as releases.
+--
+-- The filename pattern is generally:
+--
+--   mac and linux: {github-runner-osname}-{compiler}/libfzf.so
+--   windows: {github-runner-osname}-{compiler}/libfzf.dll
+--
+-- Files in a github release are required to be unique per filename, so we
+-- mutate the above downloaded artifacts into:
+--
+--   {github-runner-osname}-{compiler}-libfzf.{type}
+--
+-- This downloader then can pick the right binary and save it the users
+-- local disk as `libfzf.so` or `libfzf.dll`
+--
 --
 local download = function(options)
     options = options or {}
@@ -69,6 +91,7 @@ local download = function(options)
     local build_path = table.concat({ plugin_path, 'build' }, path_separator)
     local download_file = nil
     local binary_file = nil
+
 
     if platform == 'windows' then
         download_file = string.format("windows-2019-%s-libfzf.dll", compiler)
