@@ -1,4 +1,4 @@
-``# telescope-fzf-native.nvim
+# telescope-fzf-native.nvim
 
 **fzf-native** is a `c` port of **[fzf][fzf]**. It only covers the algorithm and
 implements few functions to support calculating the score.
@@ -29,9 +29,16 @@ available for telescope (as native component or as lua component).
 
 ## Installation
 
-`telescope-fzf-native` is mostly a native binary. We do not commit this to the
-repo, so you'll need to include a post install step to get it downloaded from
-our github releases.
+`telescope-fzf-native` is mostly a native binary, you'll need to either download our prebuilt binary or build it yourself.
+
+
+### Prebuilt binaries
+
+You can either :
+
+- head over to our releases page for the version you want, download it and depending on your platform, put it into the `build` directory as either `libfzf.so` or `libfzf.dll`.
+- Use the downloader in a postinstall step as demostrated below
+
 
 ```lua
 use {
