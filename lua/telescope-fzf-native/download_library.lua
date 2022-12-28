@@ -81,7 +81,7 @@ end
 -- local disk as `libfzf.so` or `libfzf.dll`
 --
 --
-local download = function(options)
+return function(options)
     options = options or {}
     local platform = options.platform or get_platform()
     local compiler = options.compiler or get_valid_compiler(platform)
@@ -89,46 +89,34 @@ local download = function(options)
 
     local path_separator = (platform == "windows") and '\\' or '/'
     local build_path = table.concat({ plugin_path, 'build' }, path_separator)
-    local download_file = nil
-    local binary_file = nil
 
+    local download_file, binary_file = (function()
+        if platform == 'windows' then
+            return string.format("windows-2019-%s-libfzf.dll", compiler),
+                'libfzf.dll'
+        end
 
-    if platform == 'windows' then
-        download_file = string.format("windows-2019-%s-libfzf.dll", compiler)
-        binary_file = 'libfzf.dll'
-    end
+        if platform == 'ubuntu' then
+            return string.format("ubuntu-%s-libfzf.so", compiler),
+                'libfzf.so'
+        end
 
-    if platform == 'ubuntu' then
-        download_file = string.format("ubuntu-%s-libfzf.so", compiler)
-        binary_file = 'libfzf.so'
-    end
+        if platform == 'macos' then
+            return string.format("macos-%s-libfzf.so", compiler),
+                'libfzf.so'
+        end
+    end)()
 
-    if platform == 'macos' then
-        download_file = string.format("macos-%s-libfzf.so", compiler)
-        binary_file = 'libfzf.so'
-    end
-
-    --
-    -- Ensure the Build directory exists
-    --
-    -- using format, becase we need to run the command in a subshell on windows.
-    --
     spawn({
-        'sh',
-        '-c',
+        -- we need to run the command in a subshell on windows.
+        'sh', '-c',
         -- Unsure if the space here before mkdir is required for windows.
         string.format("' mkdir %s'", build_path)
     })
 
-    --
-    -- Curl the download
-    --
     spawn({
         'curl',
         '-L', table.concat({ releases_url, version, download_file }, path_separator),
         '-o', table.concat({ build_path, binary_file }, path_separator)
     })
-
 end
-
-return download
