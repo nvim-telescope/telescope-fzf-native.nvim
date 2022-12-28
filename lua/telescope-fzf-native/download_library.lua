@@ -24,23 +24,6 @@ local get_valid_compiler = function(platform)
     end
 end
 
-local path_join = function(strings)
-    local path_separator = (platform == "windows") and '\\' or '/'
-
-    return table.concat(strings, path_separator)
-end
-
-local write_async = function(path, txt, flag)
-    uv.fs_open(path, flag, 438, function(open_err, fd)
-        assert(not open_err, open_err)
-        uv.fs_write(fd, txt, -1, function(write_err)
-            assert(not write_err, write_err)
-            uv.fs_close(fd, function(close_err)
-                assert(not close_err, close_err)
-            end)
-        end)
-    end)
-end
 
 local spawn = function(cmd, on_exit)
     local stdout = uv.new_pipe()
@@ -69,36 +52,37 @@ local spawn = function(cmd, on_exit)
 
 end
 
+--
+-- Given a platform, compiler and version; download
+-- the appropriate binary from our releases on github.
+--
+-- Ensures the expected 'build' directory exists before
+-- dowloading.
+--
 local download = function(options)
     options = options or {}
     local platform = options.platform or get_platform()
     local compiler = options.compiler or get_valid_compiler(platform)
     local version = options.version or "latest"
 
-    local command = nil
+    local path_separator = (platform == "windows") and '\\' or '/'
+    local build_path = table.concat({ plugin_path, 'build' }, path_separator)
+    local download_file = nil
+    local binary_file = nil
 
     if platform == 'windows' then
-        command = {
-            'curl', '-L',
-            string.format("%s/%s/windows-2019-%s-libfzf.dll", releases_url, version, compiler),
-            '-o', path_join({ plugin_path, 'build', 'libfzf.dll' })
-        }
+        download_file = string.format("windows-2019-%s-libfzf.dll", compiler)
+        binary_file = 'libfzf.dll'
     end
 
     if platform == 'ubuntu' then
-        command = {
-            "curl", "-L",
-            string.format("%s/%s/ubuntu-%s-libfzf.so", releases_url, version, compiler),
-            "-o", path_join({ plugin_path, 'build', 'libfzf.so' })
-        }
+        download_file = string.format("ubuntu-%s-libfzf.so", compiler)
+        binary_file = 'libfzf.so'
     end
 
     if platform == 'macos' then
-        command = {
-            "curl", "-L",
-            string.format("%s/%s/macos-%s-libfzf.so", releases_url, version, compiler),
-            "-o", path_join({ plugin_path, 'build', 'libfzf.so' })
-        }
+        download_file = string.format("macos-%s-libfzf.so", compiler)
+        binary_file = 'libfzf.so'
     end
 
     --
@@ -109,13 +93,18 @@ local download = function(options)
     spawn({
         'sh',
         '-c',
-        string.format("' mkdir %s'", path_join({ plugin_path, 'build' }))
+        -- Unsure if the space here before mkdir is required for windows.
+        string.format("' mkdir %s'", build_path)
     })
 
     --
     -- Curl the download
     --
-    spawn(command)
+    spawn({
+        'curl',
+        '-L', table.concat({ releases_url, version, download_file }, path_separator),
+        '-o', table.concat({ build_path, binary_file }, path_separator)
+    })
 
 end
 
