@@ -1,13 +1,15 @@
 local uv = vim.loop
-local plugin_path = string.sub(debug.getinfo(1).source, 2, #"/lua/telescope-fzf-native/download_library.lua" * -1)
-local releases_url = "https://github.com/nvim-telescope/telescope-fzf-native.nvim/releases/download"
+local plugin_path = string.sub(debug.getinfo(1).source, 2, #"//lua/telescope-fzf-native/download_library.lua" * -1)
+local releases_url = "https://github.com/airtonix/telescope-fzf-native.nvim/releases/download"
+
+print(debug.getinfo(1).source)
 
 local get_platform = function()
     if vim.fn.has("win32") == 1 then
         return 'windows'
     end
 
-    if vim.fn.has("mac") then
+    if vim.fn.has("mac") == 1 then
         return 'macos'
     end
 
@@ -19,7 +21,7 @@ local get_valid_compiler = function(platform)
         return 'cc'
     elseif platform == 'macos' then
         return 'gcc'
-    elseif platform == 'linux' then
+    elseif platform == 'ubuntu' then
         return 'gcc'
     end
 end
@@ -85,7 +87,7 @@ return function(options)
     options = options or {}
     local platform = options.platform or get_platform()
     local compiler = options.compiler or get_valid_compiler(platform)
-    local version = options.version or "latest"
+    local version = options.version or "dev"
 
     local path_separator = (platform == "windows") and '\\' or '/'
     local build_path = table.concat({ plugin_path, 'build' }, path_separator)
@@ -107,16 +109,25 @@ return function(options)
         end
     end)()
 
+    print('creating build dir', build_path)
+
     spawn({
         -- we need to run the command in a subshell on windows.
         'sh', '-c',
         -- Unsure if the space here before mkdir is required for windows.
-        string.format("' mkdir %s'", build_path)
+        string.format("mkdir %s", build_path)
     })
+
+    local download_url = table.concat({ releases_url, version, download_file }, path_separator)
+    local output_path = table.concat({ build_path, binary_file }, path_separator)
+
+    print('downloading', download_url, 'to', output_path)
 
     spawn({
         'curl',
-        '-L', table.concat({ releases_url, version, download_file }, path_separator),
-        '-o', table.concat({ build_path, binary_file }, path_separator)
+        '-L', download_url,
+        '-o', output_path
     })
+
+    print('downloaded')
 end
