@@ -1,5 +1,14 @@
 name: Release
 
+description: |
+  Builds and uploads binaries to the releases page.
+
+  Each matrix here contains information related to making the build
+  for the os and compiler. Platform here is used to ensure the file
+  uploaded to the release page is correlates with the download helper
+  in `telescope-fzf-native/download_library.lua#get_platform`.
+
+
 on:
   push:
     tags:
@@ -19,12 +28,16 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            platform: linux
             compiler: gcc
           - os: ubuntu-22.04
+            platform: linux
             compiler: clang
           - os: macos-12
+            platform: macos
             compiler: gcc
           - os: macos-12
+            platform: macos
             compiler: clang
 
     runs-on: ${{ matrix.os }}
@@ -41,7 +54,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-${{matrix.compiler}}
+          name: ${{ matrix.platform }}-${{matrix.compiler}}
           path: build/*.so
 
   windows:
@@ -52,6 +65,8 @@ jobs:
         include:
           # TODO: add in clang build too ?
           - os: windows-2019
+            # correlates to the get_platform in download_library
+            platform: win32
             # TODO: specify actual correct compiler name here for windows
             compiler: cc
 
@@ -64,7 +79,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.os }}-${{ matrix.compiler }}
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}
           path: build/*.dll
 
   release:
