@@ -95,7 +95,7 @@ return function(options)
     binary_file = "libfzf.dll"
   end
 
-  if platform == "ubuntu" then
+  if platform == "linux" then
     download_file = string.format("linux-%s-libfzf.so", compiler)
     binary_file = "libfzf.so"
   end
