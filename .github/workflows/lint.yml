@@ -10,7 +10,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
@@ -25,7 +25,7 @@ jobs:
 
   clangformat:
     name: clangformat
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Prepare clang-format
@@ -37,7 +37,7 @@ jobs:
 
   stylua:
     name: stylua
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: JohnnyMorganz/stylua-action@v1

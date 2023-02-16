@@ -13,13 +13,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04.04
             compiler: gcc
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             compiler: clang
-          - os: macos-10.15
+          - os: macos-12
             compiler: gcc
-          - os: macos-10.15
+          - os: macos-12
             compiler: clang
 
     runs-on: ${{ matrix.os }}
@@ -40,7 +40,10 @@ jobs:
     name: nvim-tests
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-10.15]
+        os:
+          - ubuntu-22.04
+          - macos-12
+
         include:
           - os: ubuntu-20.04
             url: https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz
