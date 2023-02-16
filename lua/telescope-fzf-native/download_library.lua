@@ -79,7 +79,7 @@ end
 -- local disk as `libfzf.so` or `libfzf.dll`
 --
 --
-local download = function(options)
+return function(options)
   options = options or {}
   local platform = options.platform or get_platform()
   local compiler = options.compiler or get_valid_compiler(platform)
@@ -124,4 +124,3 @@ local download = function(options)
   }
 end
 
-return download
