@@ -116,11 +116,6 @@ return function(options)
     --
     uv.fs_mkdir(build_path, 511)
 
-    local download_url = table.concat({ releases_url, version, download_file }, path_separator)
-    local output_path = table.concat({ build_path, binary_file }, path_separator)
-
-    print('downloading', download_url, 'to', output_path)
-
     spawn({
         'curl',
         '-L', download_url,
