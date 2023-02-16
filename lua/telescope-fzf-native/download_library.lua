@@ -3,53 +3,51 @@ local plugin_path = string.sub(debug.getinfo(1).source, 2, #"//lua/telescope-fzf
 local releases_url = "https://github.com/airtonix/telescope-fzf-native.nvim/releases/download"
 
 local get_platform = function()
-    if vim.fn.has("win32") == 1 then
-        return 'windows'
-    end
+  if vim.fn.has "win32" == 1 then
+    return "windows"
+  end
 
-    if vim.fn.has("mac") == 1 then
-        return 'macos'
-    end
+  if vim.fn.has "mac" then
+    return "macos"
+  end
 
-    return "ubuntu"
+  return "ubuntu"
 end
 
 local get_valid_compiler = function(platform)
-    if platform == 'windows' then
-        return 'cc'
-    elseif platform == 'macos' then
-        return 'gcc'
-    elseif platform == 'ubuntu' then
-        return 'gcc'
-    end
+  if platform == "windows" then
+    return "cc"
+  elseif platform == "macos" then
+    return "gcc"
+  elseif platform == "linux" then
+    return "gcc"
+  end
 end
 
-
 local spawn = function(cmd, on_exit)
-    local stdout = uv.new_pipe()
+  local stdout = uv.new_pipe()
 
-    local buffer = ""
+  local buffer = ""
 
-    local real_cmd = table.remove(cmd, 1)
+  local real_cmd = table.remove(cmd, 1)
 
-    uv.spawn(real_cmd, {
-        args = cmd,
-        stdio = { nil, stdout },
-        verbatim = true
-    }, function()
-        stdout:read_stop()
-        if (type(on_exit) == "function") then
-            on_exit(buffer)
-        end
-    end)
+  uv.spawn(real_cmd, {
+    args = cmd,
+    stdio = { nil, stdout },
+    verbatim = true,
+  }, function()
+    stdout:read_stop()
+    if type(on_exit) == "function" then
+      on_exit(buffer)
+    end
+  end)
 
-    uv.read_start(stdout, function(err, data)
-        assert(not err, err)
-        if data then
-            buffer = buffer .. data
-        end
-    end)
-
+  uv.read_start(stdout, function(err, data)
+    assert(not err, err)
+    if data then
+      buffer = buffer .. data
+    end
+  end)
 end
 
 --
@@ -81,46 +79,47 @@ end
 -- local disk as `libfzf.so` or `libfzf.dll`
 --
 --
-return function(options)
-    options = options or {}
-    local platform = options.platform or get_platform()
-    local compiler = options.compiler or get_valid_compiler(platform)
-    local version = options.version or "dev"
+local download = function(options)
+  options = options or {}
+  local platform = options.platform or get_platform()
+  local compiler = options.compiler or get_valid_compiler(platform)
+  local version = options.version or "latest"
 
-    local path_separator = (platform == "windows") and '\\' or '/'
-    local build_path = table.concat({ plugin_path, 'build' }, path_separator)
+  local path_separator = (platform == "windows") and "\\" or "/"
+  local build_path = table.concat({ plugin_path, "build" }, path_separator)
+  local download_file = nil
+  local binary_file = nil
 
-    local download_file, binary_file = (function()
-        if platform == 'windows' then
-            return string.format("windows-2019-%s-libfzf.dll", compiler),
-                'libfzf.dll'
-        end
+  if platform == "windows" then
+    download_file = string.format("windows-2019-%s-libfzf.dll", compiler)
+    binary_file = "libfzf.dll"
+  end
 
-        if platform == 'ubuntu' then
-            return string.format("ubuntu-20.04-%s-libfzf.so", compiler),
-                'libfzf.so'
-        end
+  if platform == "ubuntu" then
+    download_file = string.format("ubuntu-%s-libfzf.so", compiler)
+    binary_file = "libfzf.so"
+  end
 
-        if platform == 'macos' then
-            return string.format("macos-10.15-%s-libfzf.so", compiler),
-                'libfzf.so'
-        end
-    end)()
+  if platform == "macos" then
+    download_file = string.format("macos-%s-libfzf.so", compiler)
+    binary_file = "libfzf.so"
+  end
 
-    print('creating build dir', build_path)
+  --
+  -- Ensure the Build directory exists
+  --
+  -- using format, becase we need to run the command in a subshell on windows.
+  --
+  uv.fs_mkdir(build_path, 511)
 
-    --
-    -- Ensure the Build directory exists
-    --
-    -- using format, becase we need to run the command in a subshell on windows.
-    --
-    uv.fs_mkdir(build_path, 511)
-
-    spawn({
-        'curl',
-        '-L', download_url,
-        '-o', output_path
-    })
-
-    print('downloaded')
+  --
+  -- Curl the download
+  --
+  spawn {
+    "curl",
+    "-L",
+    table.concat({ releases_url, version, download_file }, path_separator),
+    "-o",
+    table.concat({ build_path, binary_file }, path_separator),
+  }
 end
