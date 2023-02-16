@@ -109,12 +109,12 @@ return function(options)
 
     print('creating build dir', build_path)
 
-    spawn({
-        -- we need to run the command in a subshell on windows.
-        'sh', '-c',
-        -- Unsure if the space here before mkdir is required for windows.
-        string.format("mkdir %s", build_path)
-    })
+    --
+    -- Ensure the Build directory exists
+    --
+    -- using format, becase we need to run the command in a subshell on windows.
+    --
+    uv.fs_mkdir(build_path, 511)
 
     local download_url = table.concat({ releases_url, version, download_file }, path_separator)
     local output_path = table.concat({ build_path, binary_file }, path_separator)
