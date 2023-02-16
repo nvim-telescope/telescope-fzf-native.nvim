@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04.04
+          - os: ubuntu-22.04
             compiler: gcc
           - os: ubuntu-22.04
             compiler: clang
