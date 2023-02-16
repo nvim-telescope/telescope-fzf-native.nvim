@@ -113,12 +113,7 @@ local download = function(options)
     --
     -- using format, becase we need to run the command in a subshell on windows.
     --
-    spawn({
-        'sh',
-        '-c',
-        -- Unsure if the space here before mkdir is required for windows.
-        string.format("' mkdir %s'", build_path)
-    })
+    uv.fs_mkdir(build_path, 511)
 
     --
     -- Curl the download
