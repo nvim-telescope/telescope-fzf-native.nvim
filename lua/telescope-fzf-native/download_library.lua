@@ -123,4 +123,3 @@ return function(options)
     table.concat({ build_path, binary_file }, path_separator),
   }
 end
-
