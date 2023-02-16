@@ -1,14 +1,5 @@
 name: Release
 
-description: |
-  Builds and uploads binaries to the releases page.
-
-  Each matrix here contains information related to making the build
-  for the os and compiler. Platform here is used to ensure the file
-  uploaded to the release page is correlates with the download helper
-  in `telescope-fzf-native/download_library.lua#get_platform`.
-
-
 on:
   push:
     tags:
