@@ -112,7 +112,7 @@ return function(options)
   --
   uv.fs_mkdir(build_path, 511)
 
-  local source = table.concat({ releases_url, version, download_file }, path_separator)
+  local source = table.concat({ releases_url, version, download_file }, '/')
   local target = table.concat({ build_path, binary_file }, path_separator)
 
   print("downloading", source, "to", target)
