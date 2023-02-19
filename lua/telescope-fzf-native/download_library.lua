@@ -91,7 +91,7 @@ return function(options)
   local binary_file = nil
 
   if platform == "windows" then
-    download_file = string.format("windows-2019-%s-libfzf.dll", compiler)
+    download_file = string.format("win32-%s-libfzf.dll", compiler)
     binary_file = "libfzf.dll"
   end
 
