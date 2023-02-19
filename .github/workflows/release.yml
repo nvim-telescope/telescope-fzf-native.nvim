@@ -12,23 +12,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  unix:
-    name: unix build
+  linux:
+    name: make-linux-binaries
 
     strategy:
       matrix:
         include:
           - os: ubuntu-22.04
-            platform: linux
             compiler: gcc
           - os: ubuntu-22.04
-            platform: linux
-            compiler: clang
-          - os: macos-12
-            platform: macos
-            compiler: gcc
-          - os: macos-12
-            platform: macos
             compiler: clang
 
     runs-on: ${{ matrix.os }}
@@ -45,11 +37,39 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.platform }}-${{matrix.compiler}}
+          name: linux-${{matrix.compiler}}
+          path: build/*.so
+
+  macos:
+    name: make-macos-binaries
+
+    strategy:
+      matrix:
+        include:
+          - os: macos-12
+            compiler: gcc
+          - os: macos-12
+            compiler: clang
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+
+      - uses: ./.github/actions/compile-unix
+        with:
+          compiler: ${{ matrix.compiler }}
+
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: macos-${{matrix.compiler}}
           path: build/*.so
 
   windows:
-    name: windows build
+    name: make-windows-binaries
 
     strategy:
       matrix:
@@ -78,7 +98,7 @@ jobs:
       - windows
       - unix
 
-    name: Release binaries
+    name: upload-binaries-to-release-page
 
     runs-on: ubuntu-latest
 

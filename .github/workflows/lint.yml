@@ -8,8 +8,8 @@ concurrency:
 
 
 jobs:
-  lint:
-    name: Lint
+  luacheck:
+    name: luacheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

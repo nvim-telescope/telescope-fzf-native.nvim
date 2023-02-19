@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   gcc:
-    name: c build and tests
+    name: gcc-clang-build-and-tests
     strategy:
       matrix:
         include:
@@ -30,7 +30,7 @@ jobs:
           compiler: ${{ matrix.compiler }}
 
   windows:
-    name: windows
+    name: windows-cmake-build-tests
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
