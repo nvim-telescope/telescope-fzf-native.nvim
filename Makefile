@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -fpic -std=gnu99
+CFLAGS += -Wall -Werror -fpic -std=gnu99
 
 ifeq ($(OS),Windows_NT)
     CC = gcc
