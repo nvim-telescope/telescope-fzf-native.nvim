@@ -96,7 +96,8 @@ jobs:
   release:
     needs:
       - windows
-      - unix
+      - linux
+      - macos
 
     name: upload-binaries-to-release-page
 
