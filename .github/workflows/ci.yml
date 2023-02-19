@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   gcc:
-    name: c build and tests
+    name: "CI/gcc: c build and tests"
     strategy:
       matrix:
         include:
@@ -30,14 +30,14 @@ jobs:
           compiler: ${{ matrix.compiler }}
 
   windows:
-    name: windows
+    name: CI/windows
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/compile-windows
 
   nvim-tests:
-    name: nvim-tests
+    name: CI/nvim-tests
     strategy:
       matrix:
         os:

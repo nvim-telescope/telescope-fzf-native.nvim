@@ -8,8 +8,8 @@ concurrency:
 
 
 jobs:
-  lint:
-    name: Lint
+  luacheck:
+    name: Lint/luacheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
         run: make lint
 
   clangformat:
-    name: clangformat
+    name: Lint/clangformat
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -36,7 +36,7 @@ jobs:
         run: make format
 
   stylua:
-    name: stylua
+    name: Lint/stylua
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
