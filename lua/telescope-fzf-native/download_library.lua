@@ -78,7 +78,6 @@ end
 -- This downloader then can pick the right binary and save it the users
 -- local disk as `libfzf.so` or `libfzf.dll`
 --
---
 return function(options)
   options = options or {}
   local platform = options.platform or get_platform()
@@ -105,20 +104,15 @@ return function(options)
     binary_file = "libfzf.so"
   end
 
-  --
   -- Ensure the Build directory exists
-  --
-  -- using format, becase we need to run the command in a subshell on windows.
-  --
   uv.fs_mkdir(build_path, 511)
 
-  local source = table.concat({ releases_url, version, download_file }, '/')
+  local source = table.concat({ releases_url, version, download_file }, "/")
   local target = table.concat({ build_path, binary_file }, path_separator)
 
   print("downloading", source, "to", target)
-  --
+
   -- Curl the download
-  --
   spawn {
     "curl",
     "-L",
