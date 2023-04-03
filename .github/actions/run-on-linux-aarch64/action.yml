@@ -8,9 +8,9 @@ inputs:
   compiler:
     required: true
     description: Compiler to use
-  distro:
+  dockerimage:
     required: false
-    description: the base os to run in arm64 mode
+    description: "the base os image to run in arm64 mode. see https://github.com/uraimo/run-on-arch-action#supported-platforms"
     default: ubuntu20-04
   run:
     required: false
@@ -29,7 +29,7 @@ runs:
       # see: https://github.com/uraimo/run-on-arch-action#usage
       with:
         arch: aarch64
-        distro: ${{ inputs.distro }}
+        distro: ${{ inputs.dockerimage }}
         
         # Create an artifacts directory
         setup: |
@@ -46,7 +46,7 @@ runs:
           ${{ inputs.env }}
 
         install: |
-          case "${{ inputs.distro }}" in
+          case "${{ inputs.dockerimage }}" in
             ubuntu*|jessie|stretch|buster)
               apt update -q -y
               apt install -q -y build-essential

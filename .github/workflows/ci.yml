@@ -30,18 +30,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu22.04
+          - dockerimage: ubuntu22.04
             compiler: gcc
-          - os: ubuntu22.04
+          - dockerimage: ubuntu22.04
             compiler: clang
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/unittest-unix-arm64
         with:
           compiler: ${{ matrix.compiler }}
-          distro:  ${{ matrix.os }}
+          dockerimage:  ${{ matrix.dockerimage }}
 
   unittest_macosx_x86_64:
     name: unittests-macosx-x86_64
