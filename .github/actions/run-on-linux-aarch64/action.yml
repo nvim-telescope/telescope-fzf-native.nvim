@@ -30,7 +30,15 @@ runs:
       with:
         arch: aarch64
         distro: ${{ inputs.distro }}
-        setup: ${{ inputs.setup }}
+        
+        # Create an artifacts directory
+        setup: |
+          mkdir -p "${PWD}/artifacts"
+
+        # Mount the artifacts directory as /artifacts in the container
+        dockerRunArgs: |
+          --volume "${PWD}/artifacts:/artifacts"
+
         env: |
           CC: ${{ inputs.compiler }}
           LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
@@ -48,10 +56,11 @@ runs:
         run: |
           cc --version
 
-          git clone https://github.com/Conni2461/examiner
-
-          env -C examiner \
-            { make && sudo make install }
+          git clone https://github.com/Conni2461/examiner;
+          
+          cd examiner;
+          make && sudo make install;
+          cd ..
 
           ${{env.RUN}}
 

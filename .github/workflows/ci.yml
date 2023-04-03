@@ -30,9 +30,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu22.04
             compiler: gcc
-          - os: ubuntu-22.04
+          - os: ubuntu22.04
             compiler: clang
 
     runs-on: ${{ matrix.os }}

@@ -22,8 +22,6 @@ runs:
       with:
         distro: ${{ inputs.distro }}
         compiler: ${{ inputs.compiler }}
-        setup: |
-          mkdir -p "${PWD}/artifacts"
 
         run: |
           make && sudo make install
