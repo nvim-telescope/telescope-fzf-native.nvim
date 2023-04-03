@@ -47,10 +47,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            platform: linux
             compiler: gcc
           - os: ubuntu-22.04
-            platform: linux
             compiler: clang
 
     runs-on: ${{ matrix.os }}
@@ -59,14 +57,14 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/compile-unix-arm64
+      - uses: ./.github/actions/compile-linux-arm
         with:
           compiler: ${{ matrix.compiler }}
           distro: ${{ matrix.os }}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.platform }}-arm-${{ matrix.compiler }}
+          name: linux-arm-${{ matrix.compiler }}
           path: build/*.so
 
   osx_64:

@@ -1,8 +1,8 @@
 ---
-name: Compile Unix Library (arm64)
+name: Compile Linux Library (arm)
 
 description: |
-  Prepare and compile unix builds for arm64 cpus
+  Prepare and compile linux builds for arm cpus
 
 inputs:
   compiler:
