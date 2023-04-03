@@ -1,8 +1,8 @@
 ---
-name: Compile Unix Library (arm64)
+name: Compile Unix Library (arm)
 
 description: |
-  Prepare and compile unix builds for arm64 cpus
+  Prepare and compile unix builds for arm cpus
 
 inputs:
   compiler:
@@ -10,7 +10,7 @@ inputs:
     description: Compiler to use
   dockerimage:
     required: false
-    description: "the base os image to run in arm64 mode. see https://github.com/uraimo/run-on-arch-action#supported-platforms"
+    description: "the base os image to run in aarch64 mode. see https://github.com/uraimo/run-on-arch-action#supported-platforms"
     default: ubuntu20-04
 
 runs:

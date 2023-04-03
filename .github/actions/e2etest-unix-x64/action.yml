@@ -1,8 +1,8 @@
 ---
-name: Unit Test Unix Library (arm64)
+name: Unit Test Unix Library (arm)
 
 description: |
-  Run some e2e neovim tests for unix on arm64 cpus
+  Run some e2e neovim tests for unix on arm cpus
 
 inputs:
   os:

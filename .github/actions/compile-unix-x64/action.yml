@@ -1,8 +1,8 @@
 ---
-name: Compile Unix Library (x86_64)
+name: Compile Unix Library (x64)
 
 description: |
-  Prepare and compile unix builds for x86_64 cpus
+  Prepare and compile unix builds for x64 cpus
 
 inputs:
   compiler:
