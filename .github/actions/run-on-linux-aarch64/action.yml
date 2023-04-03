@@ -49,7 +49,7 @@ runs:
           case "${{ inputs.dockerimage }}" in
             ubuntu*|jessie|stretch|buster)
               apt update -q -y
-              apt install -q -y build-essential
+              apt install -q -y build-essential git
               ;;
           esac
 
