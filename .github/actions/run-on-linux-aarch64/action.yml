@@ -16,6 +16,9 @@ inputs:
     required: false
     description: the cmd to run
     default: make
+  setup:
+    required: false
+    description: the host setup cmd to run
 
 runs:
   using: composite
@@ -27,10 +30,13 @@ runs:
       with:
         arch: aarch64
         distro: ${{ inputs.distro }}
-        env:
+        setup: ${{ inputs.setup }}
+        env: |
           CC: ${{ inputs.compiler }}
           LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
           RUN: ${{ inputs.run }}
+          ${{ inputs.env }}
+
         install: |
           case "${{ inputs.distro }}" in
             ubuntu*|jessie|stretch|buster)
@@ -38,12 +44,14 @@ runs:
               apt install -q -y build-essential
               ;;
           esac
+
         run: |
           cc --version
 
           git clone https://github.com/Conni2461/examiner
 
           env -C examiner \
-            make && sudo make install
+            { make && sudo make install }
 
           ${{env.RUN}}
+

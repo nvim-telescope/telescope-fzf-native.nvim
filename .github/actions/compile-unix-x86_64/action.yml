@@ -20,8 +20,8 @@ runs:
       run: |
         cc --version
         git clone https://github.com/Conni2461/examiner
-        cd examiner
-        make && sudo make install
+        env -C examiner \ 
+          { make && sudo make install }
 
     - name: Build
       env:
