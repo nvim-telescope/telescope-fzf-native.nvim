@@ -24,7 +24,7 @@ runs:
         compiler: ${{ inputs.compiler }}
 
         run: |
-          make && sudo make install
+          make && make install
           # Produce a binary artifact and place it in the mounted volume
           cp ./build/* /artifacts/
 
