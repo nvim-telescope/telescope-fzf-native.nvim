@@ -2,17 +2,6 @@ local uv = vim.loop
 local plugin_path = string.sub(debug.getinfo(1).source, 2, #"//lua/telescope-fzf-native/download_library.lua" * -1)
 local releases_url = "https://github.com/airtonix/telescope-fzf-native.nvim/releases/download"
 
-local get_platform = function()
-  if vim.fn.has "win32" == 1 then
-    return "windows"
-  end
-
-  if vim.fn.has "mac" == 1 then
-    return "macos"
-  end
-
-  return "linux"
-end
 
 local get_valid_compiler = function(platform)
   if platform == "windows" then
@@ -80,7 +69,8 @@ end
 --
 return function(options)
   options = options or {}
-  local platform = options.platform or get_platform()
+  local platform = options.platform or jit.os
+  local arch = options.arch or jit.arch
   local compiler = options.compiler or get_valid_compiler(platform)
   local version = options.version or "dev"
 

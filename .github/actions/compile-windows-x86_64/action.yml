@@ -1,8 +1,8 @@
 ---
-name: Compile windows library
+name: Compile windows library (x86_64)
 
 description: |
-  Prepare and compile a windows build
+  Prepare and compile a windows build for x86_64 cpus
 
 runs:
 

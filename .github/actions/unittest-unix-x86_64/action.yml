@@ -1,8 +1,8 @@
 ---
-name: Test unix library
+name: Unit Test Unix Library (x86_64)
 
 description: |
-  Compile and test a unix build
+  Compile and test a unix build on unix for x86_64 cpus
 
 inputs:
   compiler:
@@ -13,7 +13,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/compile-unix
+    - uses: ./.github/actions/compile-unix-x86_64
       with:
         compiler: ${{ inputs.compiler }}
 

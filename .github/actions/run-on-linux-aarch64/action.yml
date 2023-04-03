@@ -1,0 +1,49 @@
+---
+name: Execute on linux aarch64 cpu
+
+description: |
+  Spins up a qemu vm in a container to execute provided commands in a aarch64 cpu 
+
+inputs:
+  compiler:
+    required: true
+    description: Compiler to use
+  distro:
+    required: false
+    description: the base os to run in arm64 mode
+    default: ubuntu20-04
+  run:
+    required: false
+    description: the cmd to run
+    default: make
+
+runs:
+  using: composite
+  steps:
+
+    - name: Prepare
+      uses: uraimo/run-on-arch-action@v2.0.5
+      # see: https://github.com/uraimo/run-on-arch-action#usage
+      with:
+        arch: aarch64
+        distro: ${{ inputs.distro }}
+        env:
+          CC: ${{ inputs.compiler }}
+          LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
+          RUN: ${{ inputs.run }}
+        install: |
+          case "${{ inputs.distro }}" in
+            ubuntu*|jessie|stretch|buster)
+              apt update -q -y
+              apt install -q -y build-essential
+              ;;
+          esac
+        run: |
+          cc --version
+
+          git clone https://github.com/Conni2461/examiner
+
+          env -C examiner \
+            make && sudo make install
+
+          ${{env.RUN}}

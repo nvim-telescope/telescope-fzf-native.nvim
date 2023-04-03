@@ -8,52 +8,101 @@ concurrency:
 
 
 jobs:
-  gcc:
-    name: gcc-clang-build-and-tests
+  unittest_linux_x86_64:
+    name: unittest-linux-x86_64
     strategy:
       matrix:
         include:
           - os: ubuntu-22.04
             compiler: gcc
+            arch: x86
           - os: ubuntu-22.04
             compiler: clang
-          - os: macos-12
-            compiler: gcc
-          - os: macos-12
-            compiler: clang
+            arch: x86
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/test-unix
+      - uses: ./.github/actions/unittest-unix-x86_64
         with:
           compiler: ${{ matrix.compiler }}
+          arch: ${{ matrix.arch }}
 
-  windows:
-    name: windows-cmake-build-tests
+  unittest_linux_arm64:
+    name: unittest-linux-arm64
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            compiler: gcc
+            arch: x86
+          - os: ubuntu-22.04
+            compiler: clang
+            arch: x86
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/unittest-unix-arm64
+        with:
+          compiler: ${{ matrix.compiler }}
+          arch: ${{ matrix.arch }}
+
+  unittest_macosx_x86_64:
+    name: unittests-macosx-x86_64
+    strategy:
+      matrix:
+        include:
+          - os: macos-12
+            compiler: gcc
+            arch: x86
+          - os: macos-12
+            compiler: clang
+            arch: x86
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/unittest-unix-x86_64
+        with:
+          compiler: ${{ matrix.compiler }}
+          arch: ${{ matrix.arch }}
+
+  unittest_windows_x86_64:
+    name: unittest-windows-x86_64
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/compile-windows
+      - uses: ./.github/actions/compile-windows-x86_64
 
-  nvim-tests:
-    name: nvim-tests
+  e2etest_linux_x86_64:
+    name: e2etest-linux-x86_64
     strategy:
       matrix:
-        os:
-          - ubuntu-22.04
-          - macos-12
-
         include:
           - os: ubuntu-20.04
             url: https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/e2etest-unix-x86_64
+        with:
+          os: ${{ matrix.os }}
+          url: ${{ matrix.url }}
+
+  e2etest_macos_x86_64:
+    name: e2etest-macos-x86_64
+    strategy:
+      matrix:
+        include:
           - os: macos-10.15
             url: https://github.com/neovim/neovim/releases/download/nightly/nvim-macos.tar.gz
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/nvim-unix-test
+      - uses: ./.github/actions/e2etest-unix-x86_64
         with:
           os: ${{ matrix.os }}
           url: ${{ matrix.url }}
