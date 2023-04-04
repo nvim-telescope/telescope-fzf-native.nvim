@@ -20,7 +20,7 @@ A single bar character term acts as an OR operator. For example, the following
 query matches entries that start with `core` and end with either `go`, `rb`,
 or `py`.
 
-```vim
+```viml
 ^core go$ | rb$ | py$
 ```
 
@@ -54,7 +54,7 @@ For other package managers, you'll want to look at the postinstall step:
 - [`lazy.nvim`](https://github.com/folke/lazy.nvim) will want you to use `build`
 - [`vimplug`](https://github.com/junegunn/vim-plug) will probably want some kind `do` involving `:lua` :shrug:
 
-```vim
+```viml
 Plug 'nvim-telescope/telescope-fzf-native.nvim', {
   'do': ':lua require("telescope-fzf-native").download_library()'
 }
@@ -64,7 +64,7 @@ Plug 'nvim-telescope/telescope-fzf-native.nvim', {
 
 > 🤚 Note
 >
-> You'll need to have both `curl` and `sh` shell installed.
+> You'll need to have `curl` installed.
 >
 > On windows, this is done by installing git, and on linux and mac this should already be solved.
 > Technically speaking this shouldn't be a problem because most neovim plugin managers encourage git to be present.
@@ -75,9 +75,9 @@ use {
   run = function()
     require('telescope-fzf-native').download_library({
         platform = 'windows' -- windows | ubuntu | macos
-        arch = 'x86_64', -- x86_64 | arm64
+        arch = 'x64', -- x64 | arm
         compiler = 'cc', -- windows: cc, unix: gcc | clang
-        version = 'latest' -- any release name found on our github releases page
+        version = '0.0.2' -- the release name found on our github releases page, defaults to "dev"
     })
   end
 }
