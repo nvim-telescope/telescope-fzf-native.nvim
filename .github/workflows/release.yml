@@ -65,7 +65,7 @@ jobs:
           name: linux-arm-${{ matrix.compiler }}
           path: build/*.so
 
-  osx_64:
+  osx_x64:
     name: make-osx_x64-binaries
 
     strategy:
