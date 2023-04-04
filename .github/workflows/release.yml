@@ -112,6 +112,66 @@ jobs:
           name: windows-x64-${{ matrix.compiler }}
           path: build/*.dll
 
+  experimental_zig:
+    name: make-${{matrix.arch}}-binaries-with-zig
+
+    strategy:
+      matrix:
+        include:
+          # windows
+          - target: arm-windows-gnu
+            os: windows
+          - target: aarch64-windows-gnu
+            os: windows
+          - target: x86_64-windows-gnu
+            os: windows
+
+          # linux
+          - target: x86_64-linux-gnu
+            os: linux
+          - target: x86_64-linux-musl
+            os: linux
+          - target: aarch64-linux-gnu
+            os: linux
+          - target: aarch64-linux-musl
+            os: linux
+          - target: arm-linux-gnueabi
+            os: linux
+          - target: arm-linux-gnueabihf
+            os: linux
+          - target: arm-linux-musleabi
+            os: linux
+          - target: arm-linux-musleabihf
+            os: linux
+          # osx
+          - target: aarch64-macos-none
+            os: osx
+          - target: aarch64-macos-none
+            os: osx
+          - target: aarch64-macos-none
+            os: osx
+          - target: x86_64-macos-none
+            os: osx
+          - target: x86_64-macos-none
+            os: osx
+          - target: x86_64-macos-none
+            os: osx
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/compile-with-zig
+        with:
+          arch: ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{matrix.os}}-${{ matrix.target }}-zig
+          path: build/*
+
   release:
     needs:
       - linux_x64

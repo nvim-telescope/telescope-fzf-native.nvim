@@ -1,0 +1,106 @@
+---
+name: Compile Library with Zig
+
+description: |
+  Use Zig to cross compile builds
+
+inputs:
+  arch:
+    required: true
+    description: |
+      valid zig target.
+      
+      see
+        
+        zig targets | jq .libc
+
+      as of 0.10.1 this is: 
+
+        "aarch64_be-linux-gnu",
+        "aarch64_be-linux-musl",
+        "aarch64_be-windows-gnu",
+        "aarch64-linux-gnu",
+        "aarch64-linux-musl",
+        "aarch64-windows-gnu",
+        "aarch64-macos-none",
+        "aarch64-macos-none",
+        "aarch64-macos-none",
+        "armeb-linux-gnueabi",
+        "armeb-linux-gnueabihf",
+        "armeb-linux-musleabi",
+        "armeb-linux-musleabihf",
+        "armeb-windows-gnu",
+        "arm-linux-gnueabi",
+        "arm-linux-gnueabihf",
+        "arm-linux-musleabi",
+        "arm-linux-musleabihf",
+        "thumb-linux-gnueabi",
+        "thumb-linux-gnueabihf",
+        "thumb-linux-musleabi",
+        "thumb-linux-musleabihf",
+        "arm-windows-gnu",
+        "csky-linux-gnueabi",
+        "csky-linux-gnueabihf",
+        "i386-linux-gnu",
+        "i386-linux-musl",
+        "i386-windows-gnu",
+        "m68k-linux-gnu",
+        "m68k-linux-musl",
+        "mips64el-linux-gnuabi64",
+        "mips64el-linux-gnuabin32",
+        "mips64el-linux-musl",
+        "mips64-linux-gnuabi64",
+        "mips64-linux-gnuabin32",
+        "mips64-linux-musl",
+        "mipsel-linux-gnueabi",
+        "mipsel-linux-gnueabihf",
+        "mipsel-linux-musl",
+        "mips-linux-gnueabi",
+        "mips-linux-gnueabihf",
+        "mips-linux-musl",
+        "powerpc64le-linux-gnu",
+        "powerpc64le-linux-musl",
+        "powerpc64-linux-gnu",
+        "powerpc64-linux-musl",
+        "powerpc-linux-gnueabi",
+        "powerpc-linux-gnueabihf",
+        "powerpc-linux-musl",
+        "riscv64-linux-gnu",
+        "riscv64-linux-musl",
+        "s390x-linux-gnu",
+        "s390x-linux-musl",
+        "sparc-linux-gnu",
+        "sparc64-linux-gnu",
+        "wasm32-freestanding-musl",
+        "wasm32-wasi-musl",
+        "x86_64-linux-gnu",
+        "x86_64-linux-gnux32",
+        "x86_64-linux-musl",
+        "x86_64-windows-gnu",
+        "x86_64-macos-none",
+        "x86_64-macos-none",
+        "x86_64-macos-none"
+
+runs:
+  using: composite
+
+
+  steps:
+
+    - name: Prepare
+      shell: bash
+      env:
+        CC: "zig cc -target ${{ inputs.arch }}"
+      run: |
+        zig cc --version
+        git clone https://github.com/Conni2461/examiner
+        cd examiner
+        make && sudo make install
+
+    - name: Build
+      env:
+        CC: "zig cc -target ${{ inputs.arch }}"
+        LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
+        
+      shell: bash
+      run: make
