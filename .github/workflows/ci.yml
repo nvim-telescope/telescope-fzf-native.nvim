@@ -71,6 +71,86 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/compile-windows-x64
 
+  unittest_zig:
+    name: make-${{matrix.arch}}-binaries-with-zig
+
+    strategy:
+      matrix:
+        include:
+          # windows
+          - target: arm-windows-gnu
+            os: windows
+            output: libfzf.dll
+          - target: aarch64-windows-gnu
+            os: windows
+            output: libfzf.dll
+          - target: x86_64-windows-gnu
+            os: windows
+            output: libfzf.dll
+
+          # linux
+          - target: x86_64-linux-gnu
+            os: linux
+            output: libfzf.so
+          - target: x86_64-linux-musl
+            os: linux
+            output: libfzf.so
+          - target: aarch64-linux-gnu
+            os: linux
+            output: libfzf.so
+          - target: aarch64-linux-musl
+            os: linux
+            output: libfzf.so
+          - target: arm-linux-gnueabi
+            os: linux
+            output: libfzf.so
+          - target: arm-linux-gnueabihf
+            os: linux
+            output: libfzf.so
+          - target: arm-linux-musleabi
+            os: linux
+            output: libfzf.so
+          - target: arm-linux-musleabihf
+            os: linux
+            output: libfzf.so
+          # osx
+          - target: aarch64-macos-none
+            os: osx
+            output: libfzf.so
+          - target: aarch64-macos-none
+            os: osx
+            output: libfzf.so
+          - target: aarch64-macos-none
+            os: osx
+            output: libfzf.so
+          - target: x86_64-macos-none
+            os: osx
+            output: libfzf.so
+          - target: x86_64-macos-none
+            os: osx
+            output: libfzf.so
+          - target: x86_64-macos-none
+            os: osx
+            output: libfzf.so
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/with-zig
+        with:
+          arch: ${{ matrix.target }}
+          output: ${{ matrix.output }}
+          run: make test
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{matrix.os}}-${{ matrix.target }}-zig
+          path: build/*
+
+
   e2etest_linux_x64:
     name: e2etest-linux-x64
     strategy:

@@ -5,6 +5,15 @@ description: |
   Use Zig to cross compile builds
 
 inputs:
+  run:
+    required: false
+    default: make
+    description: optional command to run, defaults to make
+
+  output:
+    required: true
+    description: output filename
+
   arch:
     required: true
     description: |
@@ -87,7 +96,7 @@ runs:
 
   steps:
 
-    - name: Prepare
+    - name: "Zig: Prepare"
       shell: bash
       env:
         CC: "zig cc -target ${{ inputs.arch }}"
@@ -97,10 +106,10 @@ runs:
         cd examiner
         make && sudo make install
 
-    - name: Build
+    - name: "Zig: ${{ inputs.run }}"
       env:
         CC: "zig cc -target ${{ inputs.arch }}"
         LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
-        
+        TARGET: ${{ inputs.output }}        
       shell: bash
-      run: make
+      run: ${{ inputs.run }}
