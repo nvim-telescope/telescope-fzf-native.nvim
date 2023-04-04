@@ -30,19 +30,10 @@ runs:
       with:
         arch: aarch64
         distro: ${{ inputs.dockerimage }}
-        
-        # Create an artifacts directory
-        setup: |
-          mkdir -p "${PWD}/artifacts"
-
-        # Mount the artifacts directory as /artifacts in the container
-        dockerRunArgs: |
-          --volume "${PWD}/artifacts:/artifacts"
 
         env: |
           CC: ${{ inputs.compiler }}
           LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
-          RUN: ${{ inputs.run }}
           ${{ inputs.env }}
 
         install: |
@@ -66,5 +57,5 @@ runs:
           make && make install;
           cd ..
 
-          ${{env.RUN}}
+          ${{ inputs.run }}
 

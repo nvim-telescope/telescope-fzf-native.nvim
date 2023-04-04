@@ -24,14 +24,4 @@ runs:
         compiler: ${{ inputs.compiler }}
 
         # Produce a binary artifact and place it in the mounted volume
-        run: >-
-          make && make install;
-          cp ./build/* /artifacts/
-
-    - name: Show the artifact
-      # Items placed in /artifacts in the container will be in
-      # ${PWD}/artifacts on the host.\
-      shell: bash
-      run: |
-        echo "Produced artifact at"
-        ls -al "${PWD}/artifacts"
+        run: make && make install;
