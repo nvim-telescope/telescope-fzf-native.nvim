@@ -89,7 +89,7 @@ return function(options)
   local build_path = table.concat({ plugin_path, "build" }, path_separator)
   local binary_file = get_valid_filename(platform)
 
-  local download_file = table.concat({platform, arch, compiler, binary_file}, "-")
+  local download_file = table.concat({ platform, arch, compiler, binary_file }, "-")
 
   -- Ensure the Build directory exists
   uv.fs_mkdir(build_path, 511)
@@ -102,7 +102,9 @@ return function(options)
   -- Curl the download
   spawn {
     "curl",
-    "-L", source,
-    "-o", target,
+    "-L",
+    source,
+    "-o",
+    target,
   }
 end
