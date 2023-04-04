@@ -14,7 +14,7 @@ inputs:
     default: ubuntu20-04
   run:
     required: false
-    description: the cmd to run
+    description: the cmd to run. multiline strings MUST use chomp mode ">-" and mark end of line with ";"
     default: make
   setup:
     required: false

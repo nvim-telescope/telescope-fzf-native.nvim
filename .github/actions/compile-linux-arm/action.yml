@@ -23,9 +23,9 @@ runs:
         dockerimage: ${{ inputs.dockerimage }}
         compiler: ${{ inputs.compiler }}
 
-        run: |
-          make && make install
-          # Produce a binary artifact and place it in the mounted volume
+        # Produce a binary artifact and place it in the mounted volume
+        run: >-
+          make && make install;
           cp ./build/* /artifacts/
 
     - name: Show the artifact
