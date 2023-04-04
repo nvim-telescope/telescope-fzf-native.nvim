@@ -24,4 +24,4 @@ runs:
         compiler: ${{ inputs.compiler }}
 
         # Produce a binary artifact and place it in the mounted volume
-        run: make && make install;
+        run: make
