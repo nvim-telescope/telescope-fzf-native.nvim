@@ -86,7 +86,7 @@ return function(options)
   local platform = string.lower(options.platform or jit.os)
   local arch = string.lower(options.arch or jit.arch)
   local compiler = string.lower(options.compiler or get_valid_compiler(platform))
-  local version = string.lower(options.version or 'dev')
+  local version = string.lower(options.version or "dev")
 
   local path_separator = (platform == "windows") and "\\" or "/"
   local build_path = table.concat({ plugin_path, "build" }, path_separator)
