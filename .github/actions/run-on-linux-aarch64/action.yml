@@ -51,6 +51,10 @@ runs:
               apt update -q -y
               apt install -q -y build-essential git
               ;;
+            fedora*)
+              dnf update -q -y
+              sudo dnf install make automake gcc gcc-c++ kernel-devel git
+              ;;
           esac
 
         run: |

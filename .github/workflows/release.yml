@@ -44,12 +44,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - dockerimage: ubuntu22.04
             compiler: gcc
-          - os: ubuntu-22.04
+          - dockerimage: ubuntu22.04
             compiler: clang
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
 
     steps:
 
@@ -58,7 +58,7 @@ jobs:
       - uses: ./.github/actions/compile-linux-arm
         with:
           compiler: ${{ matrix.compiler }}
-          distro: ${{ matrix.os }}
+          dockerimage: ${{ matrix.dockerimage }}
 
       - uses: actions/upload-artifact@v3
         with:

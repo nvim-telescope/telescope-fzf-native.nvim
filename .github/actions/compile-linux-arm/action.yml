@@ -8,9 +8,9 @@ inputs:
   compiler:
     required: true
     description: Compiler to use
-  distro:
+  dockerimage:
     required: false
-    description: the base os to run in arm64 mode
+    description: "the base os image to run in aarch64 mode. see https://github.com/uraimo/run-on-arch-action#supported-platforms"
     default: ubuntu20-04
 
 runs:
@@ -20,7 +20,7 @@ runs:
     - name: Compile
       uses: ./.github/actions/run-on-linux-aarch64
       with:
-        distro: ${{ inputs.distro }}
+        dockerimage: ${{ inputs.dockerimage }}
         compiler: ${{ inputs.compiler }}
 
         run: |
