@@ -19,10 +19,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            platform: linux
             compiler: gcc
           - os: ubuntu-22.04
-            platform: linux
             compiler: clang
 
     runs-on: ${{ matrix.os }}
@@ -37,7 +35,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.platform }}-x64-${{ matrix.compiler }}
+          name: linux-x64-${{ matrix.compiler }}
           path: build/*.so
 
   linux_arm:
@@ -74,10 +72,8 @@ jobs:
       matrix:
         include:
           - os: macos-12
-            platform: osx
             compiler: gcc
           - os: macos-12
-            platform: osx
             compiler: clang
 
     runs-on: ${{ matrix.os }}
@@ -86,13 +82,13 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/compile-unix-x86_64
+      - uses: ./.github/actions/compile-unix-64
         with:
           compiler: ${{ matrix.compiler }}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.platform }}-x64-${{ matrix.compiler }}
+          name: osx-x64-${{ matrix.compiler }}
           path: build/*.so
 
   windows_x64:
@@ -101,9 +97,7 @@ jobs:
     strategy:
       matrix:
         include:
-          # TODO: add in clang build too ?
           - os: windows-2019
-            platform: windows
             compiler: cc
 
     runs-on: ${{ matrix.os }}
@@ -115,7 +109,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.platform }}-x64-${{ matrix.compiler }}
+          name: windows-x64-${{ matrix.compiler }}
           path: build/*.dll
 
   release:

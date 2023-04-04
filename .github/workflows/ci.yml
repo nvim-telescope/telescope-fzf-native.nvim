@@ -7,9 +7,13 @@ concurrency:
   cancel-in-progress: true
 
 
+# Linux and Osx build definitions are separate, because they can involve
+# sufficiently different requirements as projects evolve that abstracting
+# them into one single action would just create complexity. #aha #wet
+
 jobs:
-  unittest_linux_x86_64:
-    name: unittest-linux-x86_64
+  unittest_linux_x64:
+    name: unittest-linux-x64
     strategy:
       matrix:
         include:
@@ -21,12 +25,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/unittest-unix-x86_64
+      - uses: ./.github/actions/unittest-unix-x64
         with:
           compiler: ${{ matrix.compiler }}
 
-  unittest_linux_arm64:
-    name: unittest-linux-arm64
+  unittest_linux_arm:
+    name: unittest-linux-arm
     strategy:
       matrix:
         include:
@@ -35,40 +39,40 @@ jobs:
           - dockerimage: ubuntu22.04
             compiler: clang
 
+    # when running arm jobs, we want a linux host. 
+    # the real environment is defined by dockerimage
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/unittest-unix-arm64
+      - uses: ./.github/actions/unittest-unix-arm
         with:
           compiler: ${{ matrix.compiler }}
           dockerimage:  ${{ matrix.dockerimage }}
 
-  unittest_macosx_x86_64:
-    name: unittests-macosx-x86_64
+  unittest_macosx_x64:
+    name: unittests-macosx-x64
     strategy:
       matrix:
         include:
-          - os: macos-12
-            compiler: gcc
-          - os: macos-12
-            compiler: clang
+          - compiler: gcc
+          - compiler: clang
 
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/unittest-unix-x86_64
+      - uses: ./.github/actions/unittest-unix-x64
         with:
           compiler: ${{ matrix.compiler }}
 
-  unittest_windows_x86_64:
-    name: unittest-windows-x86_64
+  unittest_windows_x64:
+    name: unittest-windows-x64
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/compile-windows-x86_64
+      - uses: ./.github/actions/compile-windows-x64
 
-  e2etest_linux_x86_64:
-    name: e2etest-linux-x86_64
+  e2etest_linux_x64:
+    name: e2etest-linux-x64
     strategy:
       matrix:
         include:
@@ -78,13 +82,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/e2etest-unix-x86_64
+      - uses: ./.github/actions/e2etest-unix-x64
         with:
-          os: ${{ matrix.os }}
           url: ${{ matrix.url }}
 
-  e2etest_macos_x86_64:
-    name: e2etest-macos-x86_64
+  e2etest_macos_x64:
+    name: e2etest-macos-x64
     strategy:
       matrix:
         include:
@@ -94,8 +97,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/e2etest-unix-x86_64
+      - uses: ./.github/actions/e2etest-unix-x64
         with:
-          os: ${{ matrix.os }}
           url: ${{ matrix.url }}
 
