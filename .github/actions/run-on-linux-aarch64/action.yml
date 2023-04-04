@@ -40,11 +40,11 @@ runs:
           case "${{ inputs.dockerimage }}" in
             ubuntu*|jessie|stretch|buster)
               apt update -q -y
-              apt install -q -y build-essential git
+              apt install -q -y build-essential git clang clang-format clang-tidy
               ;;
             fedora*)
               dnf update -q -y
-              sudo dnf install make automake gcc gcc-c++ kernel-devel git
+              sudo dnf install make automake gcc gcc-c++ kernel-devel git clang clang-format clang-tidy
               ;;
           esac
 
