@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   linux_x64:
-    name: make-linux-binaries
+    name: make-linux_x64-binaries
 
     strategy:
       matrix:
@@ -39,7 +39,7 @@ jobs:
           path: build/*.so
 
   linux_arm:
-    name: make-linux-binaries
+    name: make-linux_arm-binaries
 
     strategy:
       matrix:
