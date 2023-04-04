@@ -96,6 +96,10 @@ runs:
 
   steps:
 
+    - uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.10.1
+
     - name: "Zig: Prepare"
       shell: bash
       env:
