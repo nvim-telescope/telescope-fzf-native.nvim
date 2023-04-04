@@ -20,6 +20,19 @@ local get_valid_filename = function(platform)
   end
 end
 
+-- a function that returns the current git tag, if an exception is thrown return "dev"
+local get_current_version = function()
+  local ok, tag = pcall(function()
+    return vim.fn.system("git describe --tags --exact-match")
+  end)
+
+  if ok then
+    return tag
+  end
+
+  return "dev"
+end
+
 local spawn = function(cmd, on_exit)
   local stdout = uv.new_pipe()
 
@@ -83,7 +96,7 @@ return function(options)
   local platform = string.lower(options.platform or jit.os)
   local arch = string.lower(options.arch or jit.arch)
   local compiler = string.lower(options.compiler or get_valid_compiler(platform))
-  local version = string.lower(options.version or "dev")
+  local version = string.lower(options.version or get_current_version())
 
   local path_separator = (platform == "windows") and "\\" or "/"
   local build_path = table.concat({ plugin_path, "build" }, path_separator)
