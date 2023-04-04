@@ -23,7 +23,7 @@ end
 -- a function that returns the current git tag, if an exception is thrown return "dev"
 local get_current_version = function()
   local ok, tag = pcall(function()
-    return vim.fn.system("git describe --tags --exact-match")
+    return vim.fn.system "git describe --tags --exact-match"
   end)
 
   if ok then
