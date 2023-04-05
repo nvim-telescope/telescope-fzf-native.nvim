@@ -112,35 +112,35 @@ jobs:
           name: windows-x64-${{ matrix.compiler }}
           path: build/*.dll
 
-  experimental_zig:
-    name: make-${{matrix.target}}-binaries-with-zig
+  # experimental_zig:
+  #   name: make-${{matrix.target}}-binaries-with-zig
 
-    strategy:
-      matrix:
-        include:
-          # osx
-          - target: aarch64-macos-none
-            os: osx
-            output: libfzf.so
-          - target: x86_64-macos-none
-            os: osx
-            output: libfzf.so
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         # osx
+  #         - target: aarch64-macos-none
+  #           os: osx
+  #           output: libfzf.so
+  #         - target: x86_64-macos-none
+  #           os: osx
+  #           output: libfzf.so
 
-    runs-on: ubuntu-latest
+  #   runs-on: ubuntu-latest
 
-    steps:
+  #   steps:
 
-      - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/with-zig
-        with:
-          arch: ${{ matrix.target }}
-          output: ${{ matrix.output }}
+  #     - uses: ./.github/actions/with-zig
+  #       with:
+  #         arch: ${{ matrix.target }}
+  #         output: ${{ matrix.output }}
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ${{matrix.os}}-${{ matrix.target }}-zig
-          path: build/*
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: ${{matrix.os}}-${{ matrix.target }}-zig
+  #         path: build/*
 
   release:
     needs:
