@@ -118,56 +118,8 @@ jobs:
     strategy:
       matrix:
         include:
-          # windows
-          - target: arm-windows-gnu
-            os: windows
-            output: libfzf.dll
-          - target: aarch64-windows-gnu
-            os: windows
-            output: libfzf.dll
-          - target: x86_64-windows-gnu
-            os: windows
-            output: libfzf.dll
-
-          # linux
-          - target: x86_64-linux-gnu
-            os: linux
-            output: libfzf.so
-          - target: x86_64-linux-musl
-            os: linux
-            output: libfzf.so
-          - target: aarch64-linux-gnu
-            os: linux
-            output: libfzf.so
-          - target: aarch64-linux-musl
-            os: linux
-            output: libfzf.so
-          - target: arm-linux-gnueabi
-            os: linux
-            output: libfzf.so
-          - target: arm-linux-gnueabihf
-            os: linux
-            output: libfzf.so
-          - target: arm-linux-musleabi
-            os: linux
-            output: libfzf.so
-          - target: arm-linux-musleabihf
-            os: linux
-            output: libfzf.so
           # osx
           - target: aarch64-macos-none
-            os: osx
-            output: libfzf.so
-          - target: aarch64-macos-none
-            os: osx
-            output: libfzf.so
-          - target: aarch64-macos-none
-            os: osx
-            output: libfzf.so
-          - target: x86_64-macos-none
-            os: osx
-            output: libfzf.so
-          - target: x86_64-macos-none
             os: osx
             output: libfzf.so
           - target: x86_64-macos-none
