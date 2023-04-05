@@ -72,7 +72,7 @@ jobs:
       - uses: ./.github/actions/compile-windows-x64
 
   unittest_zig:
-    name: make-${{matrix.arch}}-binaries-with-zig
+    name: make-${{matrix.target}}-binaries-with-zig
 
     strategy:
       matrix:

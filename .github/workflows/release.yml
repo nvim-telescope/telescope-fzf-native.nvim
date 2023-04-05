@@ -113,7 +113,7 @@ jobs:
           path: build/*.dll
 
   experimental_zig:
-    name: make-${{matrix.arch}}-binaries-with-zig
+    name: make-${{matrix.target}}-binaries-with-zig
 
     strategy:
       matrix:
