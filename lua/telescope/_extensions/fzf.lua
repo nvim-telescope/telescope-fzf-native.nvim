@@ -148,6 +148,9 @@ return require("telescope").register_extension {
   },
   health = function()
     local health = vim.health or require "health"
+    local ok = health.ok or health.report_ok
+    local warn = health.warn or health.report_warn
+    local error = health.error or health.report_error
 
     local good = true
     local eq = function(expected, actual)
@@ -167,15 +170,15 @@ return require("telescope").register_extension {
     fzf.free_slab(slab)
 
     if good then
-      health.report_ok "lib working as expected"
+      ok "lib working as expected"
     else
-      health.report_error "lib not working as expected, please reinstall and open an issue if this error persists"
+      error "lib not working as expected, please reinstall and open an issue if this error persists"
       return
     end
 
     local has, config = pcall(require, "telescope.config")
     if not has then
-      health.report_error "unexpected: telescope configuration couldn't be loaded"
+      error "unexpected: telescope configuration couldn't be loaded"
     end
 
     local test_sorter = function(name, sorter)
@@ -188,9 +191,9 @@ return require("telescope").register_extension {
       sorter:_destroy()
 
       if good then
-        health.report_ok(name .. " correctly configured")
+        ok(name .. " correctly configured")
       else
-        health.report_warn(name .. " is not configured")
+        warn(name .. " is not configured")
       end
     end
     test_sorter("file_sorter", config.values.file_sorter {})
