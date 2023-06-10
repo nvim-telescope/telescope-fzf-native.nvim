@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.2)
 project(fzf LANGUAGES C)
 
+set(ENABLE_TESTING FALSE CACHE BOOL "Build unit tests for this project")
+
 add_library(${PROJECT_NAME} SHARED "src/fzf.c")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -26,3 +28,14 @@ if (NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_BINARY_DIR})
+
+if(ENABLE_TESTING)
+  add_library(examiner examiner/src/examiner.c)
+  target_include_directories(examiner PUBLIC examiner/src)
+
+  add_executable(${PROJECT_NAME}_test test/test.c)
+  target_link_libraries(${PROJECT_NAME}_test PRIVATE ${PROJECT_NAME} examiner)
+
+  include(CTest)
+  add_test(NAME ${PROJECT_NAME}_test COMMAND ${PROJECT_NAME}_test)
+endif()

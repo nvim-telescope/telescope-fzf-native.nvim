@@ -1,0 +1,41 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "x86_64-linux-musl",
+      "hidden": false,
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "cmake/toolchains/x86_64-linux-musl.cmake",
+      "cacheVariables": {
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x86_64-linux-musl",
+      "configurePreset": "x86_64-linux-musl"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "x86_64-linux-musl",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "x86_64-linux-musl"
+        },
+        {
+          "type": "build",
+          "name": "x86_64-linux-musl"
+        }
+      ]
+    }
+  ]
+}
