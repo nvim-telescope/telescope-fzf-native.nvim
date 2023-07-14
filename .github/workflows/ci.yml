@@ -15,6 +15,7 @@ jobs:
   unittest_linux_x64:
     name: unittest-linux-x64
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-22.04
@@ -37,6 +38,7 @@ jobs:
           - dockerimage: ubuntu22.04
             compiler: gcc
           - dockerimage: ubuntu22.04
+
             compiler: clang
 
     # when running arm jobs, we want a linux host. 
@@ -106,6 +108,7 @@ jobs:
   e2etest_linux_x64:
     name: e2etest-linux-x64
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-20.04

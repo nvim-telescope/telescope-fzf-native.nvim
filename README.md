@@ -103,7 +103,13 @@ Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCM
 #### packer.nvim with cmake
 
 ```lua
-use {'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+```
+
+#### lazy.nvim
+
+```lua
+{ 'nvim-telescope/telescope-fzf-native.nvim', build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
 ```
 
 ### Make (Linux, MacOS, Windows with MinGW)
@@ -119,7 +125,13 @@ Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 #### packer.nvim with gcc
 
 ```lua
-use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
+use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
+```
+
+#### lazy.nvim
+
+```lua
+{ 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' }
 ```
 
 ## Telescope Setup and Configuration
