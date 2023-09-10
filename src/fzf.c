@@ -663,27 +663,29 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
   str_slice_t p_sub =
       slice_str_right(slice_str(pattern->data, 1, M).data, f_sub.size);
   for (size_t off = 0; off < f_sub.size; off++) {
-    size_t f = (size_t)f_sub.data[off];
+    size_t foff = (size_t)f_sub.data[off];
     pchar = p_sub.data[off];
     pidx = off + 1;
     size_t row = pidx * width;
     in_gap = false;
-    t_sub = slice_i32(t.data, f, last_idx + 1);
-    b_sub = slice_i16_right(slice_i16(bo.data, f, bo.size).data, t_sub.size);
+    t_sub = slice_i32(t.data, foff, last_idx + 1);
+    b_sub = slice_i16_right(slice_i16(bo.data, foff, bo.size).data, t_sub.size);
     i16_slice_t c_sub = slice_i16_right(
-        slice_i16(c.data, row + f - f0, c.size).data, t_sub.size);
+        slice_i16(c.data, row + foff - f0, c.size).data, t_sub.size);
     i16_slice_t c_diag = slice_i16_right(
-        slice_i16(c.data, row + f - f0 - 1 - width, c.size).data, t_sub.size);
+        slice_i16(c.data, row + foff - f0 - 1 - width, c.size).data,
+        t_sub.size);
     i16_slice_t h_sub = slice_i16_right(
-        slice_i16(h.data, row + f - f0, h.size).data, t_sub.size);
+        slice_i16(h.data, row + foff - f0, h.size).data, t_sub.size);
     i16_slice_t h_diag = slice_i16_right(
-        slice_i16(h.data, row + f - f0 - 1 - width, h.size).data, t_sub.size);
+        slice_i16(h.data, row + foff - f0 - 1 - width, h.size).data,
+        t_sub.size);
     i16_slice_t h_left = slice_i16_right(
-        slice_i16(h.data, row + f - f0 - 1, h.size).data, t_sub.size);
+        slice_i16(h.data, row + foff - f0 - 1, h.size).data, t_sub.size);
     h_left.data[0] = 0;
     for (size_t j = 0; j < t_sub.size; j++) {
       char ch = (char)t_sub.data[j];
-      size_t col = j + f;
+      size_t col = j + foff;
       int16_t s1 = 0;
       int16_t s2 = 0;
       int16_t consecutive = 0;
