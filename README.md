@@ -119,8 +119,8 @@ fzf_slab_t *slab = fzf_make_default_slab();
 fzf_pattern_t *pattern = fzf_parse_pattern(CaseSmart, false, "src | lua !.c$", true);
 
 /* you can get the score/position for as many items as you want */
-int score = fzf_get_score(line, pattern, slab);
-fzf_position_t *pos = fzf_get_positions(line, pattern, slab);
+int score = fzf_get_score(line, strlen(line), pattern, slab);
+fzf_position_t *pos = fzf_get_positions(line, strlen(line), pattern, slab);
 
 fzf_free_positions(pos);
 fzf_free_pattern(pattern);
@@ -141,10 +141,10 @@ local pattern_obj = fzf.parse_pattern(pattern, case_mode, fuzzy)
 -- you can get the score/position for as many items as you want
 -- line: string
 -- score: number
-local score = fzf.get_score(line, pattern_obj, slab)
+local score = fzf.get_score(line, #line, pattern_obj, slab)
 
 -- table (does not have to be freed)
-local pos = fzf.get_pos(line, pattern_obj, slab)
+local pos = fzf.get_pos(line, #line, pattern_obj, slab)
 
 fzf.free_pattern(pattern_obj)
 fzf.free_slab(slab)

@@ -625,7 +625,8 @@ static void score_wrapper(char *pattern, char **input, int *expected) {
   fzf_slab_t *slab = fzf_make_default_slab();
   fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, pattern, true);
   for (size_t i = 0; input[i] != NULL; ++i) {
-    ASSERT_EQ(expected[i], fzf_get_score(input[i], pat, slab));
+    ASSERT_EQ(expected[i],
+              fzf_get_score(input[i], strlen(input[i]), pat, slab));
   }
   fzf_free_pattern(pat);
   fzf_free_slab(slab);
@@ -674,7 +675,8 @@ static void pos_wrapper(char *pattern, char **input, int **expected) {
   fzf_slab_t *slab = fzf_make_default_slab();
   fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, pattern, true);
   for (size_t i = 0; input[i] != NULL; ++i) {
-    fzf_position_t *pos = fzf_get_positions(input[i], pat, slab);
+    fzf_position_t *pos =
+        fzf_get_positions(input[i], strlen(input[i]), pat, slab);
     if (!pos) {
       ASSERT_EQ((void *)pos, expected[i]);
       continue;

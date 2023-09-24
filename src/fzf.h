@@ -96,12 +96,12 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
                                  char *pattern, bool fuzzy);
 void fzf_free_pattern(fzf_pattern_t *pattern);
 
-int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
+int32_t fzf_get_score(const char *text, size_t text_len, fzf_pattern_t *pattern,
                       fzf_slab_t *slab);
 
 fzf_position_t *fzf_pos_array(size_t len);
-fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern,
-                                  fzf_slab_t *slab);
+fzf_position_t *fzf_get_positions(const char *text, size_t text_len,
+                                  fzf_pattern_t *pattern, fzf_slab_t *slab);
 void fzf_free_positions(fzf_position_t *pos);
 
 fzf_slab_t *fzf_make_slab(fzf_slab_config_t config);

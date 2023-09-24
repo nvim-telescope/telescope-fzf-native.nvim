@@ -30,9 +30,9 @@ ffi.cdef [[
     size_t cap;
   } fzf_position_t;
 
-  fzf_position_t *fzf_get_positions(const char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
+  fzf_position_t *fzf_get_positions(const char *text, size_t text_len, fzf_pattern_t *pattern, fzf_slab_t *slab);
   void fzf_free_positions(fzf_position_t *pos);
-  int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern, fzf_slab_t *slab);
+  int32_t fzf_get_score(const char *text, size_t text_len, fzf_pattern_t *pattern, fzf_slab_t *slab);
 
   fzf_pattern_t *fzf_parse_pattern(int32_t case_mode, bool normalize, char *pattern, bool fuzzy);
   void fzf_free_pattern(fzf_pattern_t *pattern);
@@ -44,11 +44,11 @@ ffi.cdef [[
 local fzf = {}
 
 fzf.get_score = function(input, pattern_struct, slab)
-  return native.fzf_get_score(input, pattern_struct, slab)
+  return native.fzf_get_score(input, #input, pattern_struct, slab)
 end
 
 fzf.get_pos = function(input, pattern_struct, slab)
-  local pos = native.fzf_get_positions(input, pattern_struct, slab)
+  local pos = native.fzf_get_positions(input, #input, pattern_struct, slab)
   if pos == nil then
     return
   end
