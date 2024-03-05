@@ -1,0 +1,173 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+    branches:
+      - "main"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux_x64:
+    name: make-linux_x64-binaries
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            compiler: gcc
+          - os: ubuntu-22.04
+            compiler: clang
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/compile-unix-x64
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: linux-x64-${{ matrix.compiler }}
+          path: build/*.so
+
+  linux_arm:
+    name: make-linux_arm-binaries
+
+    strategy:
+      matrix:
+        include:
+          - dockerimage: ubuntu22.04
+            compiler: gcc
+          - dockerimage: ubuntu22.04
+            compiler: clang
+
+    runs-on: ubuntu-22.04
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/compile-linux-arm
+        with:
+          compiler: ${{ matrix.compiler }}
+          dockerimage: ${{ matrix.dockerimage }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: linux-arm-${{ matrix.compiler }}
+          path: build/*.so
+
+  osx_x64:
+    name: make-osx_x64-binaries
+
+    strategy:
+      matrix:
+        include:
+          - os: macos-12
+            compiler: gcc
+          - os: macos-12
+            compiler: clang
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/compile-unix-x64
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: osx-x64-${{ matrix.compiler }}
+          path: build/*.so
+
+  windows_x64:
+    name: make-windows_x64-binaries
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            compiler: cc
+
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: ./.github/actions/compile-windows-x64
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: windows-x64-${{ matrix.compiler }}
+          path: build/*.dll
+
+  # experimental_zig:
+  #   name: make-${{matrix.target}}-binaries-with-zig
+
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         # osx
+  #         - target: aarch64-macos-none
+  #           os: osx
+  #           output: libfzf.so
+  #         - target: x86_64-macos-none
+  #           os: osx
+  #           output: libfzf.so
+
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+
+  #     - uses: actions/checkout@v3
+
+  #     - uses: ./.github/actions/with-zig
+  #       with:
+  #         arch: ${{ matrix.target }}
+  #         output: ${{ matrix.output }}
+
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: ${{matrix.os}}-${{ matrix.target }}-zig
+  #         path: build/*
+
+  release:
+    needs:
+      - linux_x64
+      - linux_arm
+      - osx_x64
+      - windows_x64
+
+    name: upload-binaries-to-release-page
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Download artifacts from previous jobs
+        id: artifacts
+        uses: ./.github/actions/prepare-artifacts
+
+      - name: Upload release binaries
+        uses: ./.github/actions/release-binaries
+        with:
+          source: ${{ steps.artifacts.outputs.staging_area }}
+          is_development_release: ${{ !startsWith(github.ref, 'refs/tags') }}
+          is_production_release: ${{ startsWith(github.ref, 'refs/tags') }}
+          development_tag: dev
+          development_title: "dev (unstable)"
+          production_tag: ${{ github.ref_name }} # if we only consider tagged runs to be prod, then this will be the tag name
+          production_title: "Release: ${{ github.ref_name }}"

@@ -2,93 +2,137 @@ name: CI
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# Linux and Osx build definitions are separate, because they can involve
+# sufficiently different requirements as projects evolve that abstracting
+# them into one single action would just create complexity. #aha #wet
+
 jobs:
-  gcc:
-    name: c build and tests
-    runs-on: ${{ matrix.os }}
+  unittest_linux_x64:
+    name: unittest-linux-x64
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             compiler: gcc
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             compiler: clang
-          - os: macos-latest
-            compiler: gcc
-          - os: macos-latest
-            compiler: clang
-    steps:
-      - uses: actions/checkout@v3
-      - name: Prepare
-        env:
-          CC: ${{ matrix.compiler }}
-        run: |
-          cc --version
-          git clone https://github.com/Conni2461/examiner
-          cd examiner
-          make && sudo make install
-      - name: Build
-        env:
-          CC: ${{ matrix.compiler }}
-          LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
-        run: make
-      - name: Tests
-        env:
-          CC: ${{ matrix.compiler }}
-          LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
-        run: make test
 
-  windows:
-    name: windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: lukka/get-cmake@latest
-      - name: Build
-        run: |
-          cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release
-          cmake --install build --prefix build
-
-  nvim-tests:
-    name: nvim-tests
     runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            rev: nightly/nvim-linux64.tar.gz
-          - os: ubuntu-latest
-            rev: v0.9.0/nvim-linux64.tar.gz
-          - os: macos-latest
-            rev: nightly/nvim-macos.tar.gz
-          - os: macos-latest
-            rev: v0.9.0/nvim-macos.tar.gz
     steps:
       - uses: actions/checkout@v3
-      - run: date +%F > todays-date
-      - name: Restore from todays cache
-        uses: actions/cache@v3
+      - uses: ./.github/actions/unittest-unix-x64
         with:
-          path: _neovim
-          key: ${{ runner.os }}-${{ matrix.rev }}-${{ hashFiles('todays-date') }}
+          compiler: ${{ matrix.compiler }}
 
-      - name: Prepare
-        run: |
-          test -d _neovim || {
-            mkdir -p _neovim
-            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}" | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
-          }
-          mkdir -p ~/.local/share/nvim/site/pack/vendor/start
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
-          ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
-      - name: Build
-        run: make
-      - name: Tests
-        run: |
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
-          nvim --version
-          make ntest
+  unittest_linux_arm:
+    name: unittest-linux-arm
+    strategy:
+      matrix:
+        include:
+          - dockerimage: ubuntu22.04
+            compiler: gcc
+          - dockerimage: ubuntu22.04
+
+            compiler: clang
+
+    # when running arm jobs, we want a linux host. 
+    # the real environment is defined by dockerimage
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/unittest-unix-arm
+        with:
+          compiler: ${{ matrix.compiler }}
+          dockerimage:  ${{ matrix.dockerimage }}
+
+  unittest_macosx_x64:
+    name: unittests-macosx-x64
+    strategy:
+      matrix:
+        include:
+          - compiler: gcc
+          - compiler: clang
+
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/unittest-unix-x64
+        with:
+          compiler: ${{ matrix.compiler }}
+
+  unittest_windows_x64:
+    name: unittest-windows-x64
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/compile-windows-x64
+
+  # unittest_zig:
+  #   name: make-${{matrix.target}}-binaries-with-zig
+
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         # osx
+  #         - target: aarch64-macos-none
+  #           os: osx
+  #           output: libfzf.so
+  #         - target: x86_64-macos-none
+  #           os: osx
+  #           output: libfzf.so
+
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+
+  #     - uses: actions/checkout@v3
+
+  #     - uses: ./.github/actions/with-zig
+  #       with:
+  #         arch: ${{ matrix.target }}
+  #         output: ${{ matrix.output }}
+  #         run: make test
+
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: ${{matrix.os}}-${{ matrix.target }}-zig
+  #         path: build/*
+
+
+  e2etest_linux_x64:
+    name: e2etest-linux-x64
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            url: https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/e2etest-unix-x64
+        with:
+          url: ${{ matrix.url }}
+
+  e2etest_macos_x64:
+    name: e2etest-macos-x64
+    strategy:
+      matrix:
+        include:
+          - os: macos-10.15
+            url: https://github.com/neovim/neovim/releases/download/nightly/nvim-macos.tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/e2etest-unix-x64
+        with:
+          url: ${{ matrix.url }}
+

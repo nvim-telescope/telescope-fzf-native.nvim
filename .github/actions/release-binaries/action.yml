@@ -1,0 +1,86 @@
+---
+name: Create binary release
+
+description: |
+  Takes artifacts in a source directory and creates a release
+
+inputs:
+
+  source:
+    required: true
+    description: source directory
+
+  is_development_release:
+    description: Is this a dev release?
+    default: 'true'
+
+  is_production_release:
+    description: Is this a prod release?
+    default: 'false'
+
+  development_title:
+    description: Title of the release when it is a development release
+    required: true
+
+  development_tag:
+    description: Name of the tag when it is a development release
+    required: true
+
+  production_title:
+    description: Title of the release when it is a production release
+    required: true
+
+  production_tag:
+    description: Name of the tag when it is a production release
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+
+    # Development Release
+    #
+    # If workflow runs because commits are pushd to the mainline
+    # branch, then it's assumed to be a development release.
+    #
+    # There's only ever one "development" release, whatever is the latest
+    # changes to `main`.
+    #
+    # For version release, see below "Production Release"
+    #
+    - uses: ncipollo/release-action@v1
+      name: Release Development
+      if: ${{ inputs.is_development_release == 'true' }}
+      with:
+        name: ${{ inputs.development_title }}
+        tag: ${{ inputs.development_tag }}
+        omitBody: true
+        omitBodyDuringUpdate: false
+        allowUpdates: true
+        makeLatest: false
+        prerelease: true
+        removeArtifacts: true
+        replacesArtifacts: true
+        artifacts: ${{ inputs.source }}/*
+        commit: ${{ github.sha }}
+
+
+    # Production Release
+    #
+    # If the workflow runs because a tag was pushed, then this is considered
+    # a production release.
+    #
+    - uses: ncipollo/release-action@v1
+      name: Release Tag
+      if: ${{ inputs.is_production_release == 'true' }}
+      with:
+        name: ${{ inputs.production_title }}
+        tag: ${{ inputs.production_tag }}
+        omitBody: true
+        allowUpdates: true
+        makeLatest: true
+        removeArtifacts: true
+        replacesArtifacts: true
+        artifacts: ${{ inputs.source }}/*
+        commit: ${{ github.sha }}

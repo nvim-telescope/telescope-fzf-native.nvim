@@ -1,0 +1,27 @@
+---
+name: Compile Linux Library (arm)
+
+description: |
+  Prepare and compile linux builds for arm cpus
+
+inputs:
+  compiler:
+    required: true
+    description: Compiler to use
+  dockerimage:
+    required: false
+    description: "the base os image to run in aarch64 mode. see https://github.com/uraimo/run-on-arch-action#supported-platforms"
+    default: ubuntu20-04
+
+runs:
+  using: composite
+  steps:
+
+    - name: Compile
+      uses: ./.github/actions/run-on-linux-aarch64
+      with:
+        dockerimage: ${{ inputs.dockerimage }}
+        compiler: ${{ inputs.compiler }}
+
+        # Produce a binary artifact and place it in the mounted volume
+        run: make

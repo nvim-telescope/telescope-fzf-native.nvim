@@ -1,0 +1,26 @@
+---
+name: Unit Test Unix Library (x64)
+
+description: |
+  Compile and test a unix build on unix for x64 cpus
+
+inputs:
+  compiler:
+    required: true
+    description: Compiler to use
+
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/compile-unix-x64
+      with:
+        compiler: ${{ inputs.compiler }}
+
+    - name: Tests
+      env:
+        CC: ${{ inputs.compiler }}
+        LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
+      shell: bash
+      run: make test
+

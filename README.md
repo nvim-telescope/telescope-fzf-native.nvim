@@ -20,7 +20,7 @@ A single bar character term acts as an OR operator. For example, the following
 query matches entries that start with `core` and end with either `go`, `rb`,
 or `py`.
 
-```
+```viml
 ^core go$ | rb$ | py$
 ```
 
@@ -29,23 +29,78 @@ available for telescope (as native component or as lua component).
 
 ## Installation
 
-To get **fzf-native** working, you need to build it with either `cmake` or `make`. As of now, we do not ship binaries.
-Both install methods will be supported going forward.
+`telescope-fzf-native` is mostly a native binary, you'll need to either download our prebuilt binary or build it yourself.
+
+### Prebuilt binaries
+
+You can either :
+
+- head over to our releases page for the version you want, download it and depending on your platform, put it into the `build` directory as either `libfzf.so` or `libfzf.dll`.
+- Use the downloader in a postinstall step as demostrated below
+
+```lua
+use {
+  'nvim-telescope/telescope-fzf-native.nvim',
+  run = function() require('telescope-fzf-native').download_library() end
+}
+```
+
+Normally this tries to detect your operating system and defaults to downloading
+the latest version.
+
+For other package managers, you'll want to look at the postinstall step:
+
+- [`packer.nvim`](https://github.com/wbthomason/packer.nvim) wants `run`
+- [`lazy.nvim`](https://github.com/folke/lazy.nvim) will want you to use `build`
+- [`vimplug`](https://github.com/junegunn/vim-plug) will probably want some kind `do` involving `:lua` :shrug:
+
+```viml
+Plug 'nvim-telescope/telescope-fzf-native.nvim', {
+  'do': ':lua require("telescope-fzf-native").download_library()'
+}
+```
+
+### download options
+
+> 🤚 Note
+>
+> You'll need to have `curl` installed.
+>
+> On windows, this is done by installing git, and on linux and mac this should already be solved.
+> Technically speaking this shouldn't be a problem because most neovim plugin managers encourage git to be present.
+
+```lua
+use {
+  'nvim-telescope/telescope-fzf-native.nvim',
+  run = function()
+    require('telescope-fzf-native').download_library({
+        platform = 'windows' -- windows | ubuntu | macos
+        arch = 'x64', -- x64 | arm
+        compiler = 'cc', -- windows: cc, unix: gcc | clang
+        version = '0.0.2' -- the release name found on our github releases page, defaults to "dev"
+    })
+  end
+}
+```
+
+## Building yourself
+
+If you want to build **fzf-native** yourself, you will need either `cmake` or `make`.
 
 ### CMake (Windows, Linux, MacOS)
 
 This requires:
 
-- CMake, and the Microsoft C++ Build Tools on Windows
+- CMake, and the Microsoft C++ Build Tools (vcc) on Windows
 - CMake, make, and GCC or Clang on Linux and MacOS
 
-#### vim-plug
+#### vim-plug using cmake
 
 ```viml
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
 ```
 
-#### packer.nvim
+#### packer.nvim with cmake
 
 ```lua
 use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
@@ -61,13 +116,13 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMA
 
 This requires `gcc` or `clang` and `make`
 
-#### vim-plug
+#### vim-plug with gcc
 
 ```viml
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 ```
 
-#### packer.nvim
+#### packer.nvim with gcc
 
 ```lua
 use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
@@ -79,7 +134,7 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
 { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' }
 ```
 
-## Telescope Setup and Configuration:
+## Telescope Setup and Configuration
 
 ```lua
 -- You dont need to set any of these options. These are the default ones. Only
