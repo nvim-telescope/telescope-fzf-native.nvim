@@ -21,7 +21,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     PREFIX lib)
 
 # This cannot be a generator expression in this version of CMake
-if (NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+if (NOT (MSVC OR MSYS OR MINGW OR WIN32))
   set_property(TARGET ${PROJECT_NAME} PROPERTY SUFFIX .so)
 endif()
 
