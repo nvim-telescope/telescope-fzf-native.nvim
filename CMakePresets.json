@@ -1,10 +1,17 @@
 {
-  "version": 1,
+  "version": 6,
   "cmakeMinimumRequired": {
     "major": 3,
     "minor": 19,
     "patch": 0
   },
+  "include": [
+    "cmake/presets/x86_64-linux-gnu.json",
+    "cmake/presets/x86_64-linux-musl.json",
+    "cmake/presets/aarch64-linux-gnu.json",
+    "cmake/presets/aarch64-macos-none.json",
+    "cmake/presets/x86_64-windows-gnu.json"
+  ],
   "configurePresets": [
     {
       "name": "base",
