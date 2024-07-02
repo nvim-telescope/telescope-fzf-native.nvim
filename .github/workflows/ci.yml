@@ -9,17 +9,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            compiler: gcc
-          - os: ubuntu-latest
-            compiler: clang
-          - os: macos-latest
-            compiler: gcc
-          - os: macos-latest
-            compiler: clang
+        os: [ubuntu-22.04, macos-12]
+        compiler: [gcc, clang]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Prepare
         env:
           CC: ${{ matrix.compiler }}
@@ -43,13 +36,12 @@ jobs:
     name: windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: lukka/get-cmake@latest
       - name: Build
         run: |
           cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-          cmake --install build --prefix build
 
   nvim-tests:
     name: nvim-tests
@@ -57,38 +49,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            rev: nightly/nvim-linux64.tar.gz
-          - os: ubuntu-latest
-            rev: v0.9.0/nvim-linux64.tar.gz
-          - os: macos-latest
-            rev: nightly/nvim-macos.tar.gz
-          - os: macos-latest
-            rev: v0.9.0/nvim-macos.tar.gz
+        os: [ubuntu-22.04, macos-12]
+        rev: [nightly, v0.9.5, v0.10.0]
     steps:
-      - uses: actions/checkout@v3
-      - run: date +%F > todays-date
-      - name: Restore from todays cache
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
         with:
-          path: _neovim
-          key: ${{ runner.os }}-${{ matrix.rev }}-${{ hashFiles('todays-date') }}
-
+          neovim: true
+          version: ${{ matrix.rev }}
       - name: Prepare
         run: |
-          test -d _neovim || {
-            mkdir -p _neovim
-            curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.rev }}" | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
-          }
-          mkdir -p ~/.local/share/nvim/site/pack/vendor/start
-          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
-          ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
+          git clone --depth 1 https://github.com/nvim-lua/plenary.nvim ../plenary.nvim
       - name: Build
         run: make
       - name: Tests
         run: |
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
           nvim --version
           make ntest
