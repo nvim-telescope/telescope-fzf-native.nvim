@@ -643,6 +643,12 @@ TEST(ScoreIntegration, invertAnd) {
   score_wrapper("!fzf !test", input, expected);
 }
 
+TEST(ScoreIntegration, invertOr) {
+  char *input[] = {"Makefile", "test/minrc", NULL};
+  int expected[] = {16, 1};
+  score_wrapper("a | !a", input, expected);
+}
+
 TEST(ScoreIntegration, withEscapedSpace) {
   char *input[] = {"file ", "file lua", "lua", NULL};
   int expected[] = {0, 200, 0};
