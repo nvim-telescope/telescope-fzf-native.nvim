@@ -5,8 +5,8 @@ ifeq ($(OS),Windows_NT)
     TARGET := libfzf.dll
 ifeq (,$(findstring MSYS,$(MSYSTEM)))
 	# On Windows, but NOT msys
-    MKD = cmd /C mkdir
-    RM = cmd /C rmdir /Q /S
+    MKD = cmd //C mkdir
+    RM = cmd //C rmdir //Q //S
 else
     MKD = mkdir -p
     RM = rm -rf
