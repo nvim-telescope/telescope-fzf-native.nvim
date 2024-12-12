@@ -3,8 +3,8 @@ CFLAGS += -Wall -Werror -fpic -std=gnu99
 ifeq ($(OS),Windows_NT)
     CC = gcc
     TARGET := libfzf.dll
-ifeq (,$(findstring MSYS,$(MSYSTEM)))
-	# On Windows, but NOT msys
+ifeq (,$(findstring $(MSYSTEM),MSYS UCRT64 CLANG64 CLANGARM64 CLANG32 MINGW64 MINGW32))
+	# On Windows, but NOT msys/msys2
     MKD = cmd /C mkdir
     RM = cmd /C rmdir /Q /S
 else
