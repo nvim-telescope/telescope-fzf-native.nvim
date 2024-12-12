@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-12]
+        os: [ubuntu-24.04, macos-15]
         compiler: [gcc, clang]
     steps:
       - uses: actions/checkout@v4
@@ -25,12 +25,12 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
-        run: make
+        run: DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib make
       - name: Tests
         env:
           CC: ${{ matrix.compiler }}
           LD_LIBRARY_PATH: /usr/lib:/usr/local/lib
-        run: make test
+        run: DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib make test
 
   windows:
     name: windows
@@ -49,8 +49,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-12]
-        rev: [nightly, v0.9.5, v0.10.0]
+        os: [ubuntu-24.04, macos-15]
+        rev: [nightly, v0.9.5, v0.10.1]
     steps:
       - uses: actions/checkout@v4
       - uses: rhysd/action-setup-vim@v1
