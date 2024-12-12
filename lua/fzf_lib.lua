@@ -3,7 +3,11 @@ local ffi = require "ffi"
 local library_path = (function()
   local dirname = string.sub(debug.getinfo(1).source, 2, #"/fzf_lib.lua" * -1)
   if package.config:sub(1, 1) == "\\" then
-    return dirname .. "../build/libfzf.dll"
+    if vim.fn.filereadable(dirname .. "../build/Release/libfzf.dll") then
+      return dirname .. "../build/Release/libfzf.dll"
+    else
+      return dirname .. "../build/libfzf.dll"
+    end
   else
     return dirname .. "../build/libfzf.so"
   end
