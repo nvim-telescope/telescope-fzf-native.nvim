@@ -1,0 +1,33 @@
+local git_ref = '$git_ref'
+local modrev = '$modrev'
+local specrev = '$specrev'
+
+local repo_url = '$repo_url'
+
+rockspec_format = '3.0'
+package = '$package'
+version = modrev ..'-'.. specrev
+
+description = {
+  summary = '$summary',
+  labels = $labels,
+  homepage = '$homepage',
+  $license
+}
+
+source = {
+  url = repo_url .. '/archive/' .. git_ref .. '.zip',
+  dir = '$repo_name-' .. '$archive_dir_suffix',
+}
+
+build = {
+  type = 'make',
+  build_pass = false,
+  install_variables = {
+    INST_PREFIX='$(PREFIX)',
+    INST_BINDIR='$(BINDIR)',
+    INST_LIBDIR='$(LIBDIR)',
+    INST_LUADIR='$(LUADIR)',
+    INST_CONFDIR='$(CONFDIR)',
+  },
+}

@@ -44,3 +44,9 @@ clangdhappy:
 
 clean:
 	$(RM) build
+
+install:
+	mkdir -p $(INST_LUADIR)
+	mkdir -p $(INST_LIBDIR)
+	cp -r lua/* $(INST_LUADIR)
+	cp -r build/* $(INST_LIBDIR)
