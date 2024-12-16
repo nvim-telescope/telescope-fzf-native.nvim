@@ -1,0 +1,41 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "aarch64-linux-gnu",
+      "hidden": false,
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "cmake/toolchains/aarch64-linux-gnu.cmake",
+      "cacheVariables": {
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "aarch64-linux-gnu",
+      "configurePreset": "aarch64-linux-gnu"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "aarch64-linux-gnu",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "aarch64-linux-gnu"
+        },
+        {
+          "type": "build",
+          "name": "aarch64-linux-gnu"
+        }
+      ]
+    }
+  ]
+}
