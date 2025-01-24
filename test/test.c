@@ -1,4 +1,9 @@
-#include "fzf.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+
+#include "../src/fzf.h"
 
 #include <examiner.h>
 #include <stdlib.h>
@@ -769,3 +774,6 @@ int main(int argc, char **argv) {
   exam_init(argc, argv);
   return exam_run();
 }
+
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
