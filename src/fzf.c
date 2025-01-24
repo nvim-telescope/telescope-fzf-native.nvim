@@ -8,12 +8,12 @@
 // TODO(conni2461): UNICODE HEADER
 #define UNICODE_MAXASCII 0x7f
 
+/* Helpers */
 #define SFREE(x)                                                               \
   if (x) {                                                                     \
     free(x);                                                                   \
   }
 
-/* Helpers */
 #define free_alloc(obj)                                                        \
   if ((obj).allocated) {                                                       \
     free((obj).data);                                                          \
