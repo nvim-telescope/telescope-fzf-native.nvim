@@ -1,4 +1,4 @@
-CFLAGS += -Wall -Werror -fpic -std=gnu99
+CFLAGS += -std=gnu99 -Wall -Wextra -Werror -Wpedantic -pedantic-errors -fpic -Wsign-conversion -Wformat=2 -Wshadow -Wvla -fstack-protector-all
 
 ifeq ($(OS),Windows_NT)
     CC = gcc
@@ -26,7 +26,7 @@ build/$(TARGET): src/fzf.c src/fzf.h
 build/test: build/$(TARGET) test/test.c
 	$(CC) -Og -ggdb3 $(CFLAGS) test/test.c -o build/test -I./src -L./build -lfzf -lexaminer
 
-.PHONY: lint format clangdhappy clean test ntest
+.PHONY: lint format test test_dyn_link ntest clangdhappy clean
 lint:
 	luacheck lua
 
@@ -35,6 +35,9 @@ format:
 
 test: build/test
 	@LD_LIBRARY_PATH=${PWD}/build:${PWD}/examiner/build:${LD_LIBRARY_PATH} ./build/test
+
+test_dyn_link: build/test
+	@LD_LIBRARY_PATH=/usr/local/lib:./build:${LD_LIBRARY_PATH} ./build/test
 
 ntest:
 	nvim --headless --noplugin -u test/minrc.vim -c "PlenaryBustedDirectory test/ { minimal_init = './test/minrc.vim' }"

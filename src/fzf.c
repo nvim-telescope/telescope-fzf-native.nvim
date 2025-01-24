@@ -1,5 +1,6 @@
 #include "fzf.h"
 
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -28,14 +29,14 @@
   }
 
 #define gen_slice(name, type)                                                  \
-  gen_simple_slice(name, type);                                                \
+  gen_simple_slice(name, type)                                                \
   static name##_slice_t slice_##name##_right(type *input, size_t to) {         \
     return slice_##name(input, 0, to);                                         \
   }
 
-gen_slice(i16, int16_t);
-gen_simple_slice(i32, int32_t);
-gen_slice(str, const char);
+gen_slice(i16, int16_t)
+gen_simple_slice(i32, int32_t)
+gen_slice(str, const char)
 #undef gen_slice
 #undef gen_simple_slice
 
@@ -84,7 +85,7 @@ static size_t leading_whitespaces(fzf_string_t *str) {
 
 static size_t trailing_whitespaces(fzf_string_t *str) {
   size_t whitespaces = 0;
-  for (size_t i = str->size - 1; i >= 0; i--) {
+  for (size_t i = str->size - 1; ; i--) {
     if (!isspace((uint8_t)str->data[i])) {
       break;
     }
@@ -367,6 +368,8 @@ static int32_t try_skip(fzf_string_t *input, bool case_sensitive, byte b,
 }
 
 static bool is_ascii(const char *runes, size_t size) {
+  (void)runes;
+  (void)size;
   // TODO(conni2461): future use
   /* for (size_t i = 0; i < size; i++) { */
   /*   if (runes[i] >= 256) { */
@@ -462,6 +465,7 @@ static int32_t calculate_score(bool case_sensitive, bool normalize,
 fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
                                 fzf_string_t *text, fzf_string_t *pattern,
                                 fzf_position_t *pos, fzf_slab_t *slab) {
+  (void)slab;
   const size_t M = pattern->size;
   const size_t N = text->size;
   if (M == 0) {
@@ -489,7 +493,7 @@ fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
         sidx = (int32_t)idx;
       }
       pidx++;
-      if (pidx == M) {
+      if (pidx == (int32_t)M) {
         eidx = (int32_t)idx + 1;
         break;
       }
@@ -736,10 +740,10 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
 
       int16_t s1 = 0;
       int16_t s2 = 0;
-      if (i > 0 && j >= f.data[i]) {
+      if (i > 0 && (int32_t)j >= f.data[i]) {
         s1 = h.data[ii - width + j0 - 1];
       }
-      if (j > f.data[i]) {
+      if ((int32_t)j > f.data[i]) {
         s2 = h.data[ii + j0 - 1];
       }
 
@@ -770,6 +774,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
 fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
                                    fzf_string_t *text, fzf_string_t *pattern,
                                    fzf_position_t *pos, fzf_slab_t *slab) {
+  (void)slab;
   const size_t M = pattern->size;
   const size_t N = text->size;
 
@@ -834,6 +839,7 @@ fzf_result_t fzf_exact_match_naive(bool case_sensitive, bool normalize,
 fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
                               fzf_string_t *text, fzf_string_t *pattern,
                               fzf_position_t *pos, fzf_slab_t *slab) {
+  (void)slab;
   const size_t M = pattern->size;
   if (M == 0) {
     return (fzf_result_t){0, 0, 0};
@@ -869,6 +875,7 @@ fzf_result_t fzf_prefix_match(bool case_sensitive, bool normalize,
 fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
                               fzf_string_t *text, fzf_string_t *pattern,
                               fzf_position_t *pos, fzf_slab_t *slab) {
+  (void)slab;
   size_t trimmed_len = text->size;
   const size_t M = pattern->size;
   /* TODO(conni2461): i think this is wrong */
@@ -879,9 +886,6 @@ fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
     return (fzf_result_t){(int32_t)trimmed_len, (int32_t)trimmed_len, 0};
   }
   size_t diff = trimmed_len - M;
-  if (diff < 0) {
-    return (fzf_result_t){-1, -1, 0};
-  }
 
   for (size_t idx = 0; idx < M; idx++) {
     char c = text->data[idx + diff];
@@ -906,6 +910,7 @@ fzf_result_t fzf_suffix_match(bool case_sensitive, bool normalize,
 fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
                              fzf_string_t *text, fzf_string_t *pattern,
                              fzf_position_t *pos, fzf_slab_t *slab) {
+  (void)slab;
   const size_t M = pattern->size;
   if (M == 0) {
     return (fzf_result_t){-1, -1, 0};
@@ -992,6 +997,7 @@ static void append_pattern(fzf_pattern_t *pattern, fzf_term_set_t *value) {
  */
 fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
                                  char *pattern, bool fuzzy) {
+  (void)normalize;
   fzf_pattern_t *pat_obj = (fzf_pattern_t *)malloc(sizeof(fzf_pattern_t));
   memset(pat_obj, 0, sizeof(*pat_obj));
 
