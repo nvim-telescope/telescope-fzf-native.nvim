@@ -26,7 +26,10 @@ build/$(TARGET): src/fzf.c src/fzf.h
 build/test: build/$(TARGET) test/test.c
 	$(CC) -Og -ggdb3 $(CFLAGS) test/test.c -o build/test -I./src -L./build -lfzf -lexaminer
 
-.PHONY: lint format test test_dyn_link ntest clangdhappy clean
+build/l: build/$(TARGET) test/test.c
+	$(CC) -Og -ggdb3 $(CFLAGS) test/main.c -o build/main -I./src -L./build -lfzf -lexaminer
+
+.PHONY: lint format test test_dyn_link l ntest clangdhappy clean
 lint:
 	luacheck lua
 
@@ -38,6 +41,9 @@ test: build/test
 
 test_dyn_link: build/test
 	@LD_LIBRARY_PATH=/usr/local/lib:./build:${LD_LIBRARY_PATH} ./build/test
+
+l:
+	@LD_LIBRARY_PATH=/usr/local/lib:./build:${LD_LIBRARY_PATH} ./build/main
 
 ntest:
 	nvim --headless --noplugin -u test/minrc.vim -c "PlenaryBustedDirectory test/ { minimal_init = './test/minrc.vim' }"

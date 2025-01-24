@@ -19,26 +19,44 @@
     free((obj).data);                                                          \
   }
 
-#define gen_simple_slice(name, type)                                           \
-  typedef struct {                                                             \
-    type *data;                                                                \
-    size_t size;                                                               \
-  } name##_slice_t;                                                            \
-  static name##_slice_t slice_##name(type *input, size_t from, size_t to) {    \
-    return (name##_slice_t){.data = input + from, .size = to - from};          \
-  }
+/* Types */
+// i16, int16_t slice
+typedef struct {
+  int16_t *data;
+  size_t size;
+} i16_slice_t;
 
-#define gen_slice(name, type)                                                  \
-  gen_simple_slice(name, type)                                                \
-  static name##_slice_t slice_##name##_right(type *input, size_t to) {         \
-    return slice_##name(input, 0, to);                                         \
-  }
+static i16_slice_t slice_i16(int16_t *input, size_t from, size_t to) {
+  return (i16_slice_t){.data = input + from, .size = to - from};
+}
 
-gen_slice(i16, int16_t)
-gen_simple_slice(i32, int32_t)
-gen_slice(str, const char)
-#undef gen_slice
-#undef gen_simple_slice
+static i16_slice_t slice_i16_right(int16_t *input, size_t to) {
+  return slice_i16(input, 0, to);
+}
+
+// i32, int32_t slice
+typedef struct {
+  int32_t *data;
+  size_t size;
+} i32_slice_t;
+
+static i32_slice_t slice_i32(int32_t *input, size_t from, size_t to) {
+  return (i32_slice_t){.data = input + from, .size = to - from};
+}
+
+// str, const char slice
+typedef struct {
+  const char *data;
+  size_t size;
+} str_slice_t;
+
+static str_slice_t slice_str(const char *input, size_t from, size_t to) {
+  return (str_slice_t){.data = input + from, .size = to - from};
+}
+
+static str_slice_t slice_str_right(const char *input, size_t to) {
+  return slice_str(input, 0, to);
+}
 
 /* TODO(conni2461): additional types (utf8) */
 typedef int32_t char_class;
@@ -85,7 +103,7 @@ static size_t leading_whitespaces(fzf_string_t *str) {
 
 static size_t trailing_whitespaces(fzf_string_t *str) {
   size_t whitespaces = 0;
-  for (size_t i = str->size - 1; ; i--) {
+  for (size_t i = str->size - 1; true; i--) {
     if (!isspace((uint8_t)str->data[i])) {
       break;
     }
@@ -367,24 +385,8 @@ static int32_t try_skip(fzf_string_t *input, bool case_sensitive, byte b,
   return from + idx;
 }
 
-static bool is_ascii(const char *runes, size_t size) {
-  (void)runes;
-  (void)size;
-  // TODO(conni2461): future use
-  /* for (size_t i = 0; i < size; i++) { */
-  /*   if (runes[i] >= 256) { */
-  /*     return false; */
-  /*   } */
-  /* } */
-  return true;
-}
-
 static int32_t ascii_fuzzy_index(fzf_string_t *input, const char *pattern,
                                  size_t size, bool case_sensitive) {
-  if (!is_ascii(pattern, size)) {
-    return -1;
-  }
-
   int32_t first_idx = 0;
   int32_t idx = 0;
   for (size_t pidx = 0; pidx < size; pidx++) {
