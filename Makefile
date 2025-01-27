@@ -1,4 +1,4 @@
-CFLAGS += -std=gnu99 -Wall -Wextra -Werror -Wpedantic -pedantic-errors -fpic -Wsign-conversion -Wformat=2 -Wshadow -Wvla -fstack-protector-all
+CFLAGS += -std=gnu2x -Wall -Wextra -Werror -Wpedantic -pedantic-errors -fpic -Wsign-conversion -Wformat=2 -Wshadow -Wvla -fstack-protector-all
 
 ifeq ($(OS),Windows_NT)
     CC = gcc

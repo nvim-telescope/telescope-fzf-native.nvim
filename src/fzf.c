@@ -1,5 +1,6 @@
 #include "fzf.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
@@ -62,7 +63,7 @@ static str_slice_t slice_str_right(const char *input, size_t to) {
 typedef int32_t char_class;
 typedef char byte;
 
-typedef enum {
+enum fzf_score : int16_t {
   ScoreMatch = 16,
   ScoreGapStart = -3,
   ScoreGapExtention = -1,
@@ -70,16 +71,18 @@ typedef enum {
   BonusNonWord = ScoreMatch / 2,
   BonusCamel123 = BonusBoundary + ScoreGapExtention,
   BonusConsecutive = -(ScoreGapStart + ScoreGapExtention),
-  BonusFirstCharMultiplier = 2,
-} score_t;
+  BonusFirstCharMultiplier = 2
+};
+typedef enum fzf_score score_t;
 
-typedef enum {
+enum fzf_char_types {
   CharNonWord = 0,
   CharLower,
   CharUpper,
   CharLetter,
   CharNumber
-} char_types;
+};
+typedef enum fzf_char_types char_types;
 
 static int32_t index_byte(fzf_string_t *string, char b) {
   for (size_t i = 0; i < string->size; i++) {
@@ -240,8 +243,9 @@ static void resize_pos(fzf_position_t *pos, size_t add_len, size_t comp) {
 }
 
 static void unsafe_append_pos(fzf_position_t *pos, size_t value) {
+  assert(value <= UINT32_MAX);
   resize_pos(pos, pos->cap, 1);
-  pos->data[pos->size] = value;
+  pos->data[pos->size] = (uint32_t)value;
   pos->size++;
 }
 
@@ -263,7 +267,8 @@ static void insert_range(fzf_position_t *pos, size_t start, size_t end) {
 
   resize_pos(pos, end - start, end - start);
   for (size_t k = start; k < end; k++) {
-    pos->data[pos->size] = k;
+    assert(k <= UINT32_MAX);
+    pos->data[pos->size] = (uint32_t)k;
     pos->size++;
   }
 }
@@ -495,6 +500,7 @@ fzf_result_t fzf_fuzzy_match_v1(bool case_sensitive, bool normalize,
         sidx = (int32_t)idx;
       }
       pidx++;
+      assert(M <= INT32_MAX);
       if (pidx == (int32_t)M) {
         eidx = (int32_t)idx + 1;
         break;
@@ -742,6 +748,7 @@ fzf_result_t fzf_fuzzy_match_v2(bool case_sensitive, bool normalize,
 
       int16_t s1 = 0;
       int16_t s2 = 0;
+      assert(j <= INT32_MAX);
       if (i > 0 && (int32_t)j >= f.data[i]) {
         s1 = h.data[ii - width + j0 - 1];
       }
@@ -995,18 +1002,20 @@ static void append_pattern(fzf_pattern_t *pattern, fzf_term_set_t *value) {
 // TODO(conni2461): REFACTOR
 /* assumption (maybe i change that later)
  * - always v2 alg
- * - bool extended always true (thats the whole point of this isn't it)
  */
-fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
-                                 char *pattern, bool fuzzy) {
-  (void)normalize;
+fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, /*bool normalize,*/
+                                 char *pattern, size_t pat_len/*, bool fuzzy*/) {
+  /*(void)normalize;*/
   fzf_pattern_t *pat_obj = (fzf_pattern_t *)malloc(sizeof(fzf_pattern_t));
   memset(pat_obj, 0, sizeof(*pat_obj));
 
-  size_t pat_len = strlen(pattern);
+  // size_t pat_len = strlen(pattern);
   if (pat_len == 0) {
     return pat_obj;
   }
+
+  assert(pattern[pat_len - 1] != '\0'); // not null terminated
+
   pattern = trim_whitespace_left(pattern, &pat_len);
   while (has_suffix(pattern, pat_len, " ", 1) &&
          !has_suffix(pattern, pat_len, "\\ ", 2)) {
@@ -1043,9 +1052,9 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
     } else {
       SFREE(lower_text);
     }
-    if (!fuzzy) {
+    /*if (!fuzzy) {
       fn = fzf_exact_match_naive;
-    }
+    }*/
     if (set->size > 0 && !after_bar && strcmp(text, "|") == 0) {
       switch_set = false;
       after_bar = true;
@@ -1068,7 +1077,7 @@ fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
     }
 
     if (has_prefix(text, "'", 1)) {
-      if (fuzzy && !inv) {
+      if (/*fuzzy &&*/ !inv) {
         fn = fzf_exact_match_naive;
         text++;
         len--;
@@ -1149,7 +1158,7 @@ void fzf_free_pattern(fzf_pattern_t *pattern) {
   SFREE(pattern);
 }
 
-int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
+int32_t fzf_get_score(const char *text, size_t text_len, fzf_pattern_t *pattern,
                       fzf_slab_t *slab) {
   // If the pattern is an empty string then pattern->ptr will be NULL and we
   // basically don't want to filter. Return 1 for telescope
@@ -1157,7 +1166,7 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
     return 1;
   }
 
-  fzf_string_t input = {.data = text, .size = strlen(text)};
+  fzf_string_t input = { .data = text, .size = text_len };
   if (pattern->only_inv) {
     int final = 0;
     for (size_t i = 0; i < pattern->size; i++) {

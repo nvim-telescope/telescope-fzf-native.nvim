@@ -441,7 +441,7 @@ TEST(EqualMatch, case3) {
 }
 
 TEST(PatternParsing, empty) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "", strlen(""));
   ASSERT_EQ(0, pat->size);
   ASSERT_EQ(0, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -450,7 +450,7 @@ TEST(PatternParsing, empty) {
 }
 
 TEST(PatternParsing, simple) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "lua", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "lua", strlen("lua"));
   ASSERT_EQ(1, pat->size);
   ASSERT_EQ(1, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -465,7 +465,7 @@ TEST(PatternParsing, simple) {
 }
 
 TEST(PatternParsing, withEscapedSpace) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "file\\ ", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "file\\ ", strlen("file\\ "));
   ASSERT_EQ(1, pat->size);
   ASSERT_EQ(1, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -481,7 +481,7 @@ TEST(PatternParsing, withEscapedSpace) {
 
 TEST(PatternParsing, withComplexEscapedSpace) {
   fzf_pattern_t *pat =
-      fzf_parse_pattern(CaseSmart, false, "file\\ with\\ space", true);
+      fzf_parse_pattern(CaseSmart, "file\\ with\\ space", strlen("file\\ with\\ space"));
   ASSERT_EQ(1, pat->size);
   ASSERT_EQ(1, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -497,7 +497,7 @@ TEST(PatternParsing, withComplexEscapedSpace) {
 }
 
 TEST(PatternParsing, withEscapedSpaceAndNormalSpace) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "file\\  new", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "file\\  new", strlen("file\\  new"));
   ASSERT_EQ(2, pat->size);
   ASSERT_EQ(2, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -518,7 +518,7 @@ TEST(PatternParsing, withEscapedSpaceAndNormalSpace) {
 }
 
 TEST(PatternParsing, invert) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "!Lua", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "!Lua", strlen("!Lua"));
   ASSERT_EQ(1, pat->size);
   ASSERT_EQ(1, pat->cap);
   ASSERT_TRUE(pat->only_inv);
@@ -534,7 +534,7 @@ TEST(PatternParsing, invert) {
 }
 
 TEST(PatternParsing, invertMultiple) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "!fzf !test", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "!fzf !test", strlen("!fzf !test"));
   ASSERT_EQ(2, pat->size);
   ASSERT_EQ(2, pat->cap);
   ASSERT_TRUE(pat->only_inv);
@@ -557,7 +557,7 @@ TEST(PatternParsing, invertMultiple) {
 }
 
 TEST(PatternParsing, smartCase) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "Lua", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "Lua", strlen("Lua"));
   ASSERT_EQ(1, pat->size);
   ASSERT_EQ(1, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -572,7 +572,7 @@ TEST(PatternParsing, smartCase) {
 }
 
 TEST(PatternParsing, simpleOr) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, "'src | ^Lua", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, "'src | ^Lua", strlen("'src | ^Lua"));
   ASSERT_EQ(1, pat->size);
   ASSERT_EQ(1, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -591,8 +591,7 @@ TEST(PatternParsing, simpleOr) {
 }
 
 TEST(PatternParsing, complexAnd) {
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false,
-                                         ".lua$ 'previewer !'term !asdf", true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, ".lua$ 'previewer !'term !asdf", strlen(".lua$ 'previewer !'term !asdf"));
   ASSERT_EQ(4, pat->size);
   ASSERT_EQ(4, pat->cap);
   ASSERT_FALSE(pat->only_inv);
@@ -628,9 +627,9 @@ TEST(PatternParsing, complexAnd) {
 
 static void score_wrapper(char *pattern, char **input, int *expected) {
   fzf_slab_t *slab = fzf_make_default_slab();
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, pattern, true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, pattern, strlen(pattern));
   for (size_t i = 0; input[i] != NULL; ++i) {
-    ASSERT_EQ(expected[i], fzf_get_score(input[i], pat, slab));
+    ASSERT_EQ(expected[i], fzf_get_score(input[i], strlen(input[i]), pat, slab));
   }
   fzf_free_pattern(pat);
   fzf_free_slab(slab);
@@ -677,7 +676,7 @@ TEST(ScoreIntegration, complexTerm) {
 
 static void pos_wrapper(char *pattern, char **input, int **expected) {
   fzf_slab_t *slab = fzf_make_default_slab();
-  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, false, pattern, true);
+  fzf_pattern_t *pat = fzf_parse_pattern(CaseSmart, pattern, strlen(pattern));
   for (size_t i = 0; input[i] != NULL; ++i) {
     fzf_position_t *pos = fzf_get_positions(input[i], pat, slab);
     if (!pos) {

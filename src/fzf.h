@@ -92,11 +92,18 @@ fzf_result_t fzf_equal_match(bool case_sensitive, bool normalize,
                              fzf_position_t *pos, fzf_slab_t *slab);
 
 /* interface */
-fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, bool normalize,
-                                 char *pattern, bool fuzzy);
+/* Parse the fzf pattern.
+ * pat_len should be equivalent to strlen, do not include null terminator in length.
+ */
+fzf_pattern_t *fzf_parse_pattern(fzf_case_types case_mode, /*bool normalize,*/
+                                 char *pattern, size_t pat_len/*, bool fuzzy*/);
 void fzf_free_pattern(fzf_pattern_t *pattern);
 
-int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
+/* Get score for specific entry based on fzf_pattern_t.
+ * Call fzf_make_slab | fzf_make_default_slab and fzf_parse_pattern before trying to get score.
+ * text_len should be equivalent to strlen, do not include null terminator in length.
+ */
+int32_t fzf_get_score(const char *text, size_t text_len, fzf_pattern_t *pattern,
                       fzf_slab_t *slab);
 
 fzf_position_t *fzf_pos_array(size_t len);
