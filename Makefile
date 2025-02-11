@@ -1,4 +1,4 @@
-CFLAGS += -Wall -Werror -fpic -std=gnu99
+CFLAGS += -Wall -fpic -std=gnu99
 
 ifeq ($(OS),Windows_NT)
     CC = gcc
@@ -25,6 +25,11 @@ build/$(TARGET): src/fzf.c src/fzf.h
 
 build/test: build/$(TARGET) test/test.c
 	$(CC) -Og -ggdb3 $(CFLAGS) test/test.c -o build/test -I./src -L./build -lfzf -lexaminer
+
+.PHONY:
+debug: src/fzf.c src/fzf.h
+	$(MKD) build
+	$(CC) -Og $(CFLAGS) -Werror -shared src/fzf.c -o build/$(TARGET)
 
 .PHONY: lint format clangdhappy clean test ntest
 lint:
