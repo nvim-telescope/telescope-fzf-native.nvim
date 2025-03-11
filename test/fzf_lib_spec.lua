@@ -54,6 +54,12 @@ describe("fzf", function()
     fzf.free_pattern(p)
   end)
 
+  it("can get the score for issue 52", function()
+    local p = fzf.parse_pattern("a | !a", 0)
+    eq(1, fzf.get_score("test/minrc.vim", p, slab))
+    fzf.free_pattern(p)
+  end)
+
   it("can get the pos for simple pattern", function()
     local p = fzf.parse_pattern("fzf", 0)
     eq({ 7, 6, 5 }, fzf.get_pos("src/fzf", p, slab))
