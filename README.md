@@ -57,6 +57,9 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMA
 { 'nvim-telescope/telescope-fzf-native.nvim', build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
 ```
 
+> **Note:* On Windows you want to replace the `do`, `run`, and `build` command with `cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build`.
+> This makes sure the libfzf.dll ends up in the correct directory.
+
 ### Make (Linux, MacOS, Windows with MinGW)
 
 This requires `gcc` or `clang` and `make`
