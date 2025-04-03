@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10)
 project(fzf LANGUAGES C)
 
 add_library(${PROJECT_NAME} SHARED "src/fzf.c")
