@@ -57,6 +57,18 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMA
 { 'nvim-telescope/telescope-fzf-native.nvim', build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
 ```
 
+#### Older Versions of CMake
+
+If your system does not have access to CMake 3.5 or later, then you will need
+to specify an extra flag overriding that minimum version:
+
+```bash
+cmake -S. -Bbuild -DCMAKE_POLICY_VERSION_MINIMUM=<YOUR VERSION HERE> \
+    -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release
+```
+
+This is not guaranteed to work.
+
 ### Make (Linux, MacOS, Windows with MinGW)
 
 This requires `gcc` or `clang` and `make`
