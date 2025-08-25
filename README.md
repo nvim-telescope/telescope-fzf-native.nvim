@@ -57,9 +57,10 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMA
 { 'nvim-telescope/telescope-fzf-native.nvim', build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
 ```
 
-### Make (Linux, MacOS, Windows with MinGW)
+### Make (Linux, MacOS, Windows with MinGW, FreeBSD)
 
 This requires `gcc` or `clang` and `make`
+Note: for FreeBSD you have to use the GNU make `gmake` instead of `make`.
 
 #### vim-plug
 
