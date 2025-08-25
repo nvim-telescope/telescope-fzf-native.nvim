@@ -32,7 +32,7 @@ available for telescope (as native component or as lua component).
 To get **fzf-native** working, you need to build it with either `cmake` or `make`. As of now, we do not ship binaries.
 Both install methods will be supported going forward.
 
-### CMake (Windows, Linux, MacOS)
+### CMake (Windows, Linux, MacOS, FreeBSD)
 
 This requires:
 
