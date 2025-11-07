@@ -1,6 +1,13 @@
-name: CI
+name: Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+  workflow_dispatch:
 
 jobs:
   gcc:
@@ -9,10 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        os: [ubuntu-latest, macos-latest]
         compiler: [gcc, clang]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Prepare
         env:
           CC: ${{ matrix.compiler }}
@@ -36,7 +43,7 @@ jobs:
     name: windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: lukka/get-cmake@latest
       - name: Build
         run: |
@@ -49,10 +56,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
-        rev: [nightly, v0.9.5, v0.10.1]
+        os: [ubuntu-latest, macos-latest]
+        rev: [nightly, stable, v0.10.4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
