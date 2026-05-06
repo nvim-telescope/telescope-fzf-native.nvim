@@ -1179,7 +1179,11 @@ int32_t fzf_get_score(const char *text, fzf_pattern_t *pattern,
       }
 
       if (term->inv) {
-        current_score = 0;
+        if (term_set->size > 1) {
+          current_score = 1;
+        } else {
+          current_score = 0;
+        }
         matched = true;
       }
     }
