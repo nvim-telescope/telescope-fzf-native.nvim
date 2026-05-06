@@ -32,7 +32,7 @@ available for telescope (as native component or as lua component).
 To get **fzf-native** working, you need to build it with either `cmake` or `make`. As of now, we do not ship binaries.
 Both install methods will be supported going forward.
 
-### CMake (Windows, Linux, MacOS)
+### CMake (Windows, Linux, MacOS, FreeBSD)
 
 This requires:
 
@@ -57,9 +57,10 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMA
 { 'nvim-telescope/telescope-fzf-native.nvim', build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release --target install' }
 ```
 
-### Make (Linux, MacOS, Windows with MinGW)
+### Make (Linux, MacOS, Windows with MinGW, FreeBSD)
 
 This requires `gcc` or `clang` and `make`
+Note: for FreeBSD you have to use the GNU make `gmake` instead of `make`.
 
 #### vim-plug
 
