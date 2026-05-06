@@ -1,6 +1,9 @@
 local fzf = require "fzf_lib"
 local sorters = require "telescope.sorters"
 
+-- todo(clason): remove when dropping support for Nvim 0.12
+local nonnil = vim.nonnil or vim.F.if_nil
+
 local case_enum = setmetatable({
   ["smart_case"] = 0,
   ["ignore_case"] = 1,
@@ -112,8 +115,8 @@ end
 
 local fast_extend = function(opts, conf)
   local ret = {}
-  ret.case_mode = vim.F.if_nil(opts.case_mode, conf.case_mode)
-  ret.fuzzy = vim.F.if_nil(opts.fuzzy, conf.fuzzy)
+  ret.case_mode = nonnil(opts.case_mode, conf.case_mode)
+  ret.fuzzy = nonnil(opts.fuzzy, conf.fuzzy)
   return ret
 end
 
@@ -126,12 +129,12 @@ end
 
 return require("telescope").register_extension {
   setup = function(ext_config, config)
-    local override_file = vim.F.if_nil(ext_config.override_file_sorter, true)
-    local override_generic = vim.F.if_nil(ext_config.override_generic_sorter, true)
+    local override_file = nonnil(ext_config.override_file_sorter, true)
+    local override_generic = nonnil(ext_config.override_generic_sorter, true)
 
     local conf = {}
-    conf.case_mode = vim.F.if_nil(ext_config.case_mode, "smart_case")
-    conf.fuzzy = vim.F.if_nil(ext_config.fuzzy, true)
+    conf.case_mode = nonnil(ext_config.case_mode, "smart_case")
+    conf.fuzzy = nonnil(ext_config.fuzzy, true)
 
     if override_file then
       config.file_sorter = wrap_sorter(conf)
