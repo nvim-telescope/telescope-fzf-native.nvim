@@ -1,6 +1,11 @@
 local ffi = require "ffi"
 
 local library_path = (function()
+  local libfzf_path = package.searchpath("libfzf", package.cpath)
+  if libfzf_path then
+    -- package has been installed with luarocks
+    return library_path
+  end
   local dirname = string.sub(debug.getinfo(1).source, 2, #"/fzf_lib.lua" * -1)
   if package.config:sub(1, 1) == "\\" then
     return dirname .. "../build/libfzf.dll"
