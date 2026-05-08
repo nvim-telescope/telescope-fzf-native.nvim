@@ -1,0 +1,41 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "aarch64-macos-none",
+      "hidden": false,
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "cmake/toolchains/aarch64-macos-none.cmake",
+      "cacheVariables": {
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "aarch64-macos-none",
+      "configurePreset": "aarch64-macos-none"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "aarch64-macos-none",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "aarch64-macos-none"
+        },
+        {
+          "type": "build",
+          "name": "aarch64-macos-none"
+        }
+      ]
+    }
+  ]
+}
