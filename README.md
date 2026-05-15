@@ -79,6 +79,28 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'make' }
 { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' }
 ```
 
+### Zig (Linux, Macos, Windows)
+
+This requires `zig`
+
+#### vim-plug
+
+```viml
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'zig build' }
+```
+
+#### packer.nvim
+
+```lua
+use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'zig build' }
+```
+
+#### lazy.nvim
+
+```lua
+{ 'nvim-telescope/telescope-fzf-native.nvim', build = 'zig build' }
+```
+
 ## Telescope Setup and Configuration
 
 ```lua

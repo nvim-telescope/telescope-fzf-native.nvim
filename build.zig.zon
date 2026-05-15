@@ -1,0 +1,22 @@
+.{
+    .name = .telescope_fzf_native,
+    .version = "0.0.0",
+    .fingerprint = 0x3245da685ca21781,
+    // .minimum_zig_version = "0.16.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "lua",
+        "src",
+        "test",
+        ".clang-format",
+        ".luacheckrc",
+        ".stylua.toml",
+        "CMakeLists.txt",
+        "CMakePrests.json",
+        "LICENSE",
+        "Makefile",
+        "README.md",
+    },
+}
