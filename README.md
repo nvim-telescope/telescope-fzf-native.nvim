@@ -39,6 +39,33 @@ This requires:
 - CMake, and the Microsoft C++ Build Tools on Windows
 - CMake, make, and GCC or Clang on Linux and MacOS
 
+#### vim.pack
+
+If you are using neovim 0.12 or later, you can use the builtin package manager `vim.pack`. Before calling `vim.pack.add`, you should have something like:
+
+```lua
+vim.api.nvim_create_autocmd('PackChanged', {
+  callback = function(ev)
+    local name, kind = ev.data.spec.name, ev.data.kind
+    if name == 'telescope-fzf-native.nvim' and (kind == 'install' or kind == 'update') then
+      vim.system({ 'cmake', '-S.', '-Bbuild', '-DCMAKE_BUILD_TYPE=Release' }, { cwd = ev.data.path }, function(obj)
+        if obj.code ~= 0 then
+          vim.notify 'cmake --build failed for telescope-fzf-native.nvim'
+        else
+          vim.system({ 'cmake', '--build', 'build', '--config', 'Release', '--target', 'install' }, { cwd = ev.data.path })
+        end
+      end)
+    end
+  end,
+})
+```
+telling neovim how to build the plugin (see the [`vim.pack` documentation](https://neovim.io/doc/user/pack/#vim.pack-events) for more information about this step), and then later
+
+```lua
+vim.pack.add({ 'https://github.com/nvim-telescope/telescope-fzf-native.nvim' })
+```
+to install it.
+
 #### vim-plug
 
 ```viml
@@ -60,6 +87,27 @@ use { 'nvim-telescope/telescope-fzf-native.nvim', run = 'cmake -S. -Bbuild -DCMA
 ### Make (Linux, MacOS, Windows with MinGW)
 
 This requires `gcc` or `clang` and `make`
+
+#### vim.pack
+
+If you are using neovim 0.12 or later, you can use the builtin package manager `vim.pack`. Before calling `vim.pack.add`, you should have something like:
+
+```lua
+vim.api.nvim_create_autocmd('PackChanged', {
+  callback = function(ev)
+    local name, kind = ev.data.spec.name, ev.data.kind
+    if name == 'telescope-fzf-native.nvim' and (kind == 'install' or kind == 'update') then
+      vim.system({ 'make' }, { cwd = ev.data.path })
+    end
+  end,
+})
+```
+telling neovim how to build the plugin (see the [`vim.pack` documentation](https://neovim.io/doc/user/pack/#vim.pack-events) for more information about this step), and then later
+
+```lua
+vim.pack.add({ 'https://github.com/nvim-telescope/telescope-fzf-native.nvim' })
+```
+to install it. 
 
 #### vim-plug
 
